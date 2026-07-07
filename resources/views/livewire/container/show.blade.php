@@ -145,8 +145,11 @@
                     </div>
                     <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
                         @foreach([
-                            'name' => 'Name', 'client_name' => 'Kunde', 'agency' => 'Agentur',
-                            'status' => 'Status', 'timezone' => 'Zeitzone', 'forge_server' => 'Forge-Server',
+                            'name' => 'Name', 'client_name' => 'Kunde',
+                            'agency' => 'Agentur', 'status' => 'Status',
+                            'flynk_tier' => 'Tier', 'maintenance_interval' => 'Wartung',
+                            'primary_contact' => 'Kontakt', 'timezone' => 'Zeitzone',
+                            'forge_server' => 'Forge-Server',
                         ] as $key => $label)
                             @if(!empty($flynkMeta[$key]))
                                 <div class="flex justify-between gap-2 border-b border-gray-100 py-1">
@@ -156,6 +159,20 @@
                             @endif
                         @endforeach
                     </div>
+
+                    {{-- Context-Completeness --}}
+                    @if(isset($flynkMeta['context_completeness']) && $flynkMeta['context_completeness'] !== null)
+                        @php $pct = (int) round((float) $flynkMeta['context_completeness'] * (($flynkMeta['context_completeness'] <= 1) ? 100 : 1)); @endphp
+                        <div class="mt-3">
+                            <div class="flex items-center justify-between text-[10px] text-gray-500 mb-1">
+                                <span>Context-Completeness</span>
+                                <span style="font-family: 'JetBrains Mono', monospace;">{{ $pct }}%</span>
+                            </div>
+                            <div class="h-1.5 rounded-full bg-black/[0.06] overflow-hidden">
+                                <div class="h-full rounded-full bg-[rgb(var(--ui-primary-rgb))]" style="width: {{ max(0, min(100, $pct)) }}%;"></div>
+                            </div>
+                        </div>
+                    @endif
                     @if(!empty($flynkMeta['production_url']) || !empty($flynkMeta['github_repo']))
                         <div class="flex flex-wrap gap-3 mt-3 text-xs">
                             @if(!empty($flynkMeta['production_url']))
@@ -175,6 +192,17 @@
                             @foreach($flynkMeta['stack'] as $tech)
                                 <span class="px-2 py-0.5 rounded-full bg-black/[0.04] text-[10px] text-gray-600">{{ $tech }}</span>
                             @endforeach
+                        </div>
+                    @endif
+
+                    @if(!empty($flynkMeta['notes']))
+                        <div class="mt-3 pt-3 border-t border-gray-100" x-data="{ open: false }">
+                            <button type="button" @click="open = !open" class="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600">
+                                @svg('heroicon-o-document-text', 'w-3.5 h-3.5')
+                                Notizen
+                                <span class="transition-transform" :class="open ? 'rotate-90' : ''">@svg('heroicon-o-chevron-right', 'w-3 h-3')</span>
+                            </button>
+                            <p x-show="open" x-collapse x-cloak class="mt-2 text-[11px] text-gray-600 whitespace-pre-line leading-relaxed">{{ $flynkMeta['notes'] }}</p>
                         </div>
                     @endif
                 </div>

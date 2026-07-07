@@ -220,17 +220,37 @@ class FlynkContainerService
         }
 
         return [
-            'name'           => $project['name'] ?? null,
-            'client_name'    => $project['client_name'] ?? null,
-            'agency'         => $project['agency'] ?? null,
-            'status'         => $project['status'] ?? null,
-            'production_url' => $project['production_url'] ?? ($project['url'] ?? null),
-            'github_repo'    => $project['github_repo'] ?? null,
-            'forge_server'   => $project['forge_server'] ?? null,
-            'timezone'       => $project['timezone'] ?? null,
-            'stack'          => $stack,
-            'updated_at'     => $project['updated_at'] ?? null,
-            'fetched_at'     => now()->toIso8601String(),
+            // Stammdaten
+            'name'                 => $project['name'] ?? null,
+            'client_name'          => $project['client_name'] ?? null,
+            'agency'               => $project['agency'] ?? null,
+            'agency_id'            => $project['agency_id'] ?? null,
+            'status'               => $project['status'] ?? null,
+            'flynk_tier'           => $project['flynk_tier'] ?? null,
+            'maintenance_interval' => $project['maintenance_interval'] ?? null,
+            'primary_contact'      => $project['primary_contact'] ?? null,
+            'context_completeness' => $project['context_completeness'] ?? null,
+            'timezone'             => $project['timezone'] ?? null,
+
+            // Technik / Deployment
+            'production_url'  => $project['production_url'] ?? ($project['url'] ?? null),
+            'github_repo'     => $project['github_repo'] ?? null,
+            'local_directory' => $project['local_directory'] ?? null,
+            'forge_server'    => $project['forge_server'] ?? null,
+            'forge_server_id' => $project['forge_server_id'] ?? null,
+            'forge_site_id'   => $project['forge_site_id'] ?? null,
+            'stack'           => $stack,
+
+            // Inhaltliches (kann null oder strukturiert sein)
+            'notes'            => $project['notes'] ?? null,
+            'profile'          => $project['profile'] ?? null,
+            'content_strategy' => $project['content_strategy'] ?? null,
+            'services'         => $project['services'] ?? null,
+
+            // Zeitstempel
+            'created_at' => $project['created_at'] ?? null,
+            'updated_at' => $project['updated_at'] ?? null,
+            'fetched_at' => now()->toIso8601String(),
         ];
     }
 
