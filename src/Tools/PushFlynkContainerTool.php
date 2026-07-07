@@ -44,7 +44,7 @@ class PushFlynkContainerTool implements ToolContract, ToolMetadataContract
             }
 
             app(FlynkContainerService::class)->pushUpdate($container);
-            $container->refresh()->load('ownerEntity');
+            $container->refresh();
 
             return ToolResult::success(array_merge(
                 $this->serializeContainer($container),

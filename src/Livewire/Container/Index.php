@@ -11,7 +11,7 @@ use Platform\FlynkConnector\Models\FlynkContainerEvent;
 use Platform\FlynkConnector\Services\FlynkContainerService;
 use Platform\Integrations\Models\Integration;
 use Platform\Integrations\Models\IntegrationConnection;
-use Platform\Organization\Models\OrganizationEntity;
+use Platform\Organization\Services\EntityDimensionBridge;
 
 class Index extends Component
 {
@@ -23,7 +23,6 @@ class Index extends Component
     public array $form = [
         'name' => '',
         'description' => '',
-        'owner_entity_id' => '',
         'integration_connection_id' => '',
         'link_mode' => 'create',   // create | link
         'external_id' => '',
@@ -45,7 +44,6 @@ class Index extends Component
         return [
             'form.name'                      => ['required', 'string', 'max:255'],
             'form.description'               => ['nullable', 'string'],
-            'form.owner_entity_id'           => ['nullable', 'integer', 'exists:organization_entities,id'],
             'form.integration_connection_id' => ['nullable', 'integer', 'exists:integration_connections,id'],
             'form.link_mode'                 => ['required', 'in:create,link'],
             'form.external_id'               => ['nullable', 'required_if:form.link_mode,link', 'string', 'max:255'],
@@ -61,7 +59,7 @@ class Index extends Component
     public function containers()
     {
         $q = FlynkContainer::query()
-            ->with(['ownerEntity', 'connection'])
+            ->with(['connection'])
             ->where('team_id', $this->rootTeamId());
 
         if ($this->search !== '') {
@@ -76,12 +74,23 @@ class Index extends Component
         return $q->orderBy('name')->get();
     }
 
+    /** container_id => [Knoten-Namen] — gebündelt über alle Container aufgelöst. */
     #[Computed]
-    public function availableEntities()
+    public function entityNamesByContainer(): array
     {
-        return OrganizationEntity::where('team_id', $this->rootTeamId())
-            ->orderBy('name')
-            ->get();
+        $ids = $this->containers->pluck('id')->all();
+        if (empty($ids)) {
+            return [];
+        }
+
+        $map = [];
+        foreach (EntityDimensionBridge::linksForLinkables(['flynk_container'], $ids, true) as $link) {
+            if ($link->entity) {
+                $map[$link->linkable_id][] = $link->entity->name;
+            }
+        }
+
+        return $map;
     }
 
     #[Computed]
@@ -162,7 +171,6 @@ class Index extends Component
         $container = FlynkContainer::create([
             'name'                      => trim($data['name']),
             'description'               => $data['description'] !== '' ? $data['description'] : null,
-            'owner_entity_id'           => $data['owner_entity_id'] !== '' ? (int) $data['owner_entity_id'] : null,
             'integration_connection_id' => $data['integration_connection_id'] !== '' ? (int) $data['integration_connection_id'] : null,
             'status'                    => FlynkContainerStatus::DRAFT,
         ]);

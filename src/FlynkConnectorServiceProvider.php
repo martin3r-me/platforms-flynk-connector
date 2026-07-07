@@ -68,6 +68,14 @@ class FlynkConnectorServiceProvider extends ServiceProvider
         // Tools registrieren
         $this->registerTools();
 
+        // EntityLinkProvider registrieren (loose Kopplung mit Organization-Modul)
+        try {
+            resolve(\Platform\Organization\Services\EntityLinkRegistry::class)
+                ->register(new \Platform\FlynkConnector\Organization\FlynkContainerEntityLinkProvider());
+        } catch (\Throwable $e) {
+            // Organization-Modul nicht geladen
+        }
+
         // Error Reporter
         try {
             resolve(\Platform\Core\Services\ErrorReporterRegistry::class)

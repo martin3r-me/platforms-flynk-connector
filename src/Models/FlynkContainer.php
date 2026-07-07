@@ -5,13 +5,17 @@ namespace Platform\FlynkConnector\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Platform\Core\Models\Team;
 use Platform\Core\Models\User;
 use Platform\FlynkConnector\Enums\FlynkContainerStatus;
 use Platform\Integrations\Models\IntegrationConnection;
+use Platform\Organization\Models\OrganizationDimensionLink;
 use Platform\Organization\Models\OrganizationEntity;
+use Platform\Organization\Services\EntityDimensionBridge;
 use Symfony\Component\Uid\UuidV7;
 
 /**
@@ -52,11 +56,32 @@ class FlynkContainer extends Model
 
     public function team(): BelongsTo { return $this->belongsTo(Team::class); }
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
-    public function ownerEntity(): BelongsTo { return $this->belongsTo(OrganizationEntity::class, 'owner_entity_id'); }
     public function connection(): BelongsTo { return $this->belongsTo(IntegrationConnection::class, 'integration_connection_id'); }
 
     public function events(): HasMany { return $this->hasMany(FlynkContainerEvent::class, 'flynk_container_id'); }
     public function syncStates(): HasMany { return $this->hasMany(FlynkSyncState::class, 'flynk_container_id'); }
+
+    /** Verortung an Organisations-Knoten via Dimension-Links (Plattform-Standard). */
+    public function dimensionLinks(): MorphMany
+    {
+        return $this->morphMany(OrganizationDimensionLink::class, 'linkable');
+    }
+
+    /** Die Organisations-Knoten, an denen dieser Container hängt. */
+    public function linkedEntities(): Collection
+    {
+        return EntityDimensionBridge::linksForLinkables(['flynk_container'], [$this->id], true)
+            ->map(fn ($link) => $link->entity)
+            ->filter()
+            ->unique('id')
+            ->values();
+    }
+
+    /** Primärer Knoten (erste Verortung) — für Anzeige und Kontext-Auflösung. */
+    public function primaryEntity(): ?OrganizationEntity
+    {
+        return $this->linkedEntities()->first();
+    }
 
     public function scopeForTeam($query, int $teamId)
     {

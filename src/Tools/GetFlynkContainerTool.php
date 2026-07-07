@@ -42,7 +42,7 @@ class GetFlynkContainerTool implements ToolContract, ToolMetadataContract
             if (! $container) {
                 return ToolResult::error('NOT_FOUND', 'Container nicht gefunden.');
             }
-            $container->load('ownerEntity', 'connection');
+            $container->load('connection');
 
             $events = $container->events()->orderByDesc('created_at')->take(10)->get()
                 ->map(fn ($e) => [

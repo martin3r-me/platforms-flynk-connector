@@ -44,7 +44,7 @@ class UnregisterFlynkContainerTool implements ToolContract, ToolMetadataContract
             }
 
             app(FlynkContainerService::class)->unregister($container);
-            $container->refresh()->load('ownerEntity');
+            $container->refresh();
 
             return ToolResult::success(array_merge(
                 $this->serializeContainer($container),

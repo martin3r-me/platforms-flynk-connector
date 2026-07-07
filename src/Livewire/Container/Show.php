@@ -10,7 +10,6 @@ use Platform\FlynkConnector\Models\FlynkContainer;
 use Platform\FlynkConnector\Services\FlynkContainerService;
 use Platform\Integrations\Models\Integration;
 use Platform\Integrations\Models\IntegrationConnection;
-use Platform\Organization\Models\OrganizationEntity;
 
 class Show extends Component
 {
@@ -19,7 +18,6 @@ class Show extends Component
     public array $form = [
         'name' => '',
         'description' => '',
-        'owner_entity_id' => '',
         'integration_connection_id' => '',
     ];
 
@@ -30,7 +28,7 @@ class Show extends Component
     {
         abort_unless($container->team_id === $this->rootTeamId(), 404);
 
-        $this->container = $container->load(['ownerEntity', 'connection', 'user']);
+        $this->container = $container->load(['connection', 'user']);
         $this->loadForm();
     }
 
@@ -44,7 +42,6 @@ class Show extends Component
         $this->form = [
             'name'                      => $this->container->name,
             'description'               => $this->container->description ?? '',
-            'owner_entity_id'           => (string) ($this->container->owner_entity_id ?? ''),
             'integration_connection_id' => (string) ($this->container->integration_connection_id ?? ''),
         ];
     }
@@ -54,7 +51,6 @@ class Show extends Component
     {
         return $this->form['name'] !== ($this->container->name ?? '')
             || $this->form['description'] !== ($this->container->description ?? '')
-            || $this->form['owner_entity_id'] != ($this->container->owner_entity_id ?? '')
             || $this->form['integration_connection_id'] != ($this->container->integration_connection_id ?? '');
     }
 
@@ -62,12 +58,6 @@ class Show extends Component
     public function events()
     {
         return $this->container->events()->with('user')->orderByDesc('created_at')->take(30)->get();
-    }
-
-    #[Computed]
-    public function availableEntities()
-    {
-        return OrganizationEntity::where('team_id', $this->rootTeamId())->orderBy('name')->get();
     }
 
     #[Computed]
@@ -89,14 +79,12 @@ class Show extends Component
         $data = $this->validate([
             'form.name'                      => ['required', 'string', 'max:255'],
             'form.description'               => ['nullable', 'string'],
-            'form.owner_entity_id'           => ['nullable', 'integer', 'exists:organization_entities,id'],
             'form.integration_connection_id' => ['nullable', 'integer', 'exists:integration_connections,id'],
         ])['form'];
 
         $this->container->update([
             'name'                      => trim($data['name']),
             'description'               => $data['description'] !== '' ? $data['description'] : null,
-            'owner_entity_id'           => $data['owner_entity_id'] !== '' ? (int) $data['owner_entity_id'] : null,
             'integration_connection_id' => $data['integration_connection_id'] !== '' ? (int) $data['integration_connection_id'] : null,
         ]);
 
@@ -188,7 +176,7 @@ class Show extends Component
 
     protected function refreshState(): void
     {
-        $this->container->refresh()->load(['ownerEntity', 'connection', 'user']);
+        $this->container->refresh()->load(['connection', 'user']);
         unset($this->events);
         $this->loadForm();
     }

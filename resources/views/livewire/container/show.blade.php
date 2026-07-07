@@ -25,10 +25,15 @@
             <div class="p-4 space-y-4 text-xs">
                 <div>
                     <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">Verortung</div>
-                    <div class="flex items-center gap-1.5 text-gray-700">
-                        @svg('heroicon-o-building-office', 'w-3.5 h-3.5 text-gray-400')
-                        <span>{{ $container->ownerEntity?->name ?? 'Kein Knoten' }}</span>
-                    </div>
+                    @php $linkedEntities = $container->linkedEntities(); @endphp
+                    @forelse($linkedEntities as $entity)
+                        <div class="flex items-center gap-1.5 text-gray-700">
+                            @svg('heroicon-o-building-office', 'w-3.5 h-3.5 text-gray-400')
+                            <span>{{ $entity->name }}</span>
+                        </div>
+                    @empty
+                        <span class="text-gray-400">Kein Knoten</span>
+                    @endforelse
                 </div>
                 <div class="border-t border-gray-200 pt-3">
                     <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">FLYNK-Verbindung</div>
@@ -90,6 +95,17 @@
     {{-- Main content --}}
     <x-ui-page-container>
         <div class="py-6 max-w-3xl space-y-6">
+
+            {{-- Verortung (Organisations-Knoten via Dimension-Links) --}}
+            <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">
+                <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-4" style="font-family: 'JetBrains Mono', monospace;">Verortung</h2>
+                <livewire:organization::dimension-linker
+                    :contextType="\Platform\FlynkConnector\Models\FlynkContainer::class"
+                    :contextId="$container->id"
+                    dimension="entities"
+                    :key="'dimlink-'.$container->id"
+                />
+            </div>
 
             {{-- FLYNK-Aktionen --}}
             <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">
@@ -217,14 +233,6 @@
                 <div class="space-y-4">
                     <x-ui-input-text wire:model="form.name" label="Name" required />
                     <x-ui-input-textarea wire:model="form.description" label="Beschreibung" rows="2" />
-                    <x-ui-input-select
-                        name="form.owner_entity_id"
-                        wire:model="form.owner_entity_id"
-                        label="Organisations-Knoten (Verortung)"
-                        :options="$this->availableEntities->pluck('name', 'id')->toArray()"
-                        :nullable="true"
-                        nullLabel="Kein Knoten"
-                    />
                     <x-ui-input-select
                         name="form.integration_connection_id"
                         wire:model="form.integration_connection_id"

@@ -8,6 +8,7 @@ use Platform\Core\Contracts\ToolMetadataContract;
 use Platform\Core\Contracts\ToolResult;
 use Platform\FlynkConnector\Models\FlynkContainer;
 use Platform\FlynkConnector\Tools\Concerns\ResolvesFlynkTeam;
+use Platform\Organization\Services\EntityDimensionBridge;
 
 class ListFlynkContainersTool implements ToolContract, ToolMetadataContract
 {
@@ -17,7 +18,7 @@ class ListFlynkContainersTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'GET /flynk-connector/containers - Listet FLYNK-Container. Filter: status, owner_entity_id.';
+        return 'GET /flynk-connector/containers - Listet FLYNK-Container. Filter: status, entity_id (verorteter Knoten).';
     }
 
     public function getSchema(): array
@@ -25,9 +26,9 @@ class ListFlynkContainersTool implements ToolContract, ToolMetadataContract
         return [
             'type' => 'object',
             'properties' => [
-                'team_id'         => ['type' => 'integer'],
-                'status'          => ['type' => 'string', 'description' => 'Optional: draft | active | error | unregistered.'],
-                'owner_entity_id' => ['type' => 'integer', 'description' => 'Optional: Filter nach verortetem Knoten.'],
+                'team_id'   => ['type' => 'integer'],
+                'status'    => ['type' => 'string', 'description' => 'Optional: draft | active | error | unregistered.'],
+                'entity_id' => ['type' => 'integer', 'description' => 'Optional: Filter nach verortetem Organisations-Knoten (Dimension-Link).'],
             ],
         ];
     }
@@ -39,13 +40,17 @@ class ListFlynkContainersTool implements ToolContract, ToolMetadataContract
             if ($resolved['error']) return $resolved['error'];
             $rootTeamId = (int) $resolved['root_team_id'];
 
-            $q = FlynkContainer::query()->where('team_id', $rootTeamId)->with('ownerEntity');
+            $q = FlynkContainer::query()->where('team_id', $rootTeamId)->with('connection');
 
             if (! empty($arguments['status'])) {
                 $q->where('status', (string) $arguments['status']);
             }
-            if (! empty($arguments['owner_entity_id'])) {
-                $q->where('owner_entity_id', (int) $arguments['owner_entity_id']);
+            if (! empty($arguments['entity_id'])) {
+                $containerIds = EntityDimensionBridge::linksForEntity((int) $arguments['entity_id'])
+                    ->where('linkable_type', 'flynk_container')
+                    ->pluck('linkable_id')
+                    ->all();
+                $q->whereIn('id', $containerIds ?: [0]);
             }
 
             $items = $q->orderBy('name')->get()->map(fn (FlynkContainer $c) => $this->serializeContainer($c))->values()->toArray();

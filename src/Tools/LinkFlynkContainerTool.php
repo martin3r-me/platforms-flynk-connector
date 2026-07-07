@@ -50,7 +50,7 @@ class LinkFlynkContainerTool implements ToolContract, ToolMetadataContract
             }
 
             app(FlynkContainerService::class)->linkRemote($container, (string) $arguments['external_id']);
-            $container->refresh()->load('ownerEntity');
+            $container->refresh();
 
             return ToolResult::success(array_merge(
                 $this->serializeContainer($container),

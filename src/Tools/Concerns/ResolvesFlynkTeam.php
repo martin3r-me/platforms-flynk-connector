@@ -86,14 +86,16 @@ trait ResolvesFlynkTeam
     /** Serialisiert einen Container für Tool-Antworten. */
     protected function serializeContainer(\Platform\FlynkConnector\Models\FlynkContainer $c): array
     {
+        $entities = $c->linkedEntities();
+
         return [
             'id'              => $c->id,
             'uuid'            => $c->uuid,
             'name'            => $c->name,
             'description'     => $c->description,
             'status'          => $c->status?->value,
-            'owner_entity_id' => $c->owner_entity_id,
-            'owner_entity'    => $c->ownerEntity?->name,
+            'entity_ids'      => $entities->pluck('id')->all(),
+            'entity_names'    => $entities->pluck('name')->all(),
             'connection_id'   => $c->integration_connection_id,
             'external_id'     => $c->external_id,
             'external_url'    => $c->external_url,

@@ -93,7 +93,7 @@
                             <div class="space-y-1.5 text-xs text-gray-500 pt-3 border-t border-gray-100">
                                 <div class="flex items-center gap-1.5">
                                     @svg('heroicon-o-building-office', 'w-3.5 h-3.5 flex-shrink-0 text-gray-400')
-                                    <span class="truncate">{{ $container->ownerEntity?->name ?? 'Kein Knoten' }}</span>
+                                    <span class="truncate">{{ implode(', ', $this->entityNamesByContainer[$container->id] ?? []) ?: 'Kein Knoten' }}</span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     @svg('heroicon-o-link', 'w-3.5 h-3.5 flex-shrink-0 text-gray-400')
@@ -121,14 +121,7 @@
             <x-ui-input-text wire:model="form.name" label="Name" required />
             <x-ui-input-textarea wire:model="form.description" label="Beschreibung" rows="2" />
 
-            <x-ui-input-select
-                name="form.owner_entity_id"
-                wire:model="form.owner_entity_id"
-                label="Organisations-Knoten (Verortung)"
-                :options="$this->availableEntities->pluck('name', 'id')->toArray()"
-                :nullable="true"
-                nullLabel="Kein Knoten"
-            />
+            <p class="text-[11px] text-gray-400">Die Verortung am Organisations-Knoten erfolgt anschließend im Container-Detail.</p>
 
             <x-ui-input-select
                 name="form.integration_connection_id"
