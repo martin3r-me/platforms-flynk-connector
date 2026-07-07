@@ -227,6 +227,20 @@
                 </div>
             @endif
 
+            {{-- Push-Vorschau (Envelope, den wir an FLYNK senden) --}}
+            <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5" x-data="{ open: false }">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)]" style="font-family: 'JetBrains Mono', monospace;">Push-Vorschau</h2>
+                    <button type="button" @click="open = !open" class="text-[10px] font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline">
+                        <span x-text="open ? 'Ausblenden' : 'JSON anzeigen'"></span>
+                    </button>
+                </div>
+                <p class="text-[11px] text-gray-500 mt-1">Struktur des Envelopes (Vorgang + Kontext), den der Connector an FLYNK pusht. Der <code>context.brand</code>-Block ist derzeit ein Beispiel und wird ab dem Brands-Port real gefüllt.</p>
+                <div x-show="open" x-collapse x-cloak class="mt-3">
+                    <pre class="text-[10px] leading-relaxed bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto" style="font-family: 'JetBrains Mono', monospace;">{{ $this->pushPreviewJson }}</pre>
+                </div>
+            </div>
+
             {{-- Einstellungen --}}
             <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">
                 <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-4" style="font-family: 'JetBrains Mono', monospace;">Einstellungen</h2>

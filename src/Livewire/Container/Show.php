@@ -60,6 +60,15 @@ class Show extends Component
         return $this->container->events()->with('user')->orderByDesc('created_at')->take(30)->get();
     }
 
+    /** Pretty-JSON der Push-Vorschau (Envelope inkl. Vorgang), zum Weitergeben an FLYNK. */
+    #[Computed]
+    public function pushPreviewJson(): string
+    {
+        $envelope = app(FlynkContainerService::class)->previewEnvelope($this->container);
+
+        return json_encode($envelope, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
     #[Computed]
     public function flynkConnections()
     {

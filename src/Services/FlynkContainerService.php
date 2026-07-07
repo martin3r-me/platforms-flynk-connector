@@ -252,6 +252,102 @@ class FlynkContainerService
         ];
     }
 
+    /**
+     * Baut den Push-Envelope (Vorgang + Kontext), so wie wir ihn an FLYNK senden.
+     *
+     * Der Kontext-Block wird ab Stream 2 von den registrierten Quell-Providern
+     * (Brands zuerst) gefüllt. Bis dahin liefert dies eine repräsentative
+     * Vorschau/Struktur — geeignet als Vertrag für den FLYNK-Ingest-Endpunkt.
+     */
+    public function buildPushEnvelope(FlynkContainer $container, array $context, string $reference): array
+    {
+        return [
+            'vorgang' => [
+                'reference'          => $reference,
+                'container_uuid'     => $container->uuid,
+                'external_reference' => $container->uuid,
+                'project_id'         => $container->external_id,
+                'created_at'         => now()->toIso8601String(),
+                'payload_hash'       => 'sha256:' . hash('sha256', $this->canonicalJson($context)),
+            ],
+            'context' => $context,
+        ];
+    }
+
+    /** Vorschau-Envelope für die UI (realer Kopf + Beispiel-Kontext). */
+    public function previewEnvelope(FlynkContainer $container): array
+    {
+        $node = $container->primaryEntity();
+
+        $context = [
+            'node' => $node ? ['id' => $node->id, 'name' => $node->name] : null,
+            'brand' => $this->exampleBrandContext(),
+            // später weitere Quellen: recruiting, events, food …
+        ];
+
+        return $this->buildPushEnvelope($container, $context, 'VG-<wird beim Push vergeben>');
+    }
+
+    /** Kanonisches JSON (rekursiv nach Keys sortiert) für stabile Hashes. */
+    public function canonicalJson(array $data): string
+    {
+        $sort = function (&$value) use (&$sort) {
+            if (is_array($value)) {
+                foreach ($value as &$v) {
+                    $sort($v);
+                }
+                unset($v);
+                if (array_keys($value) !== range(0, count($value) - 1)) {
+                    ksort($value);
+                }
+            }
+        };
+        $sort($data);
+
+        return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /** Repräsentativer Brand-Kontext (Struktur-Beispiel bis Brands-Port steht). */
+    protected function exampleBrandContext(): array
+    {
+        return [
+            'name' => 'Broich Catering',
+            'identity' => [
+                'slogan' => 'Genuss mit Haltung.',
+                'claims' => ['Fullservice-Catering aus Düsseldorf'],
+                'core_messages' => ['Regional, saisonal, verlässlich'],
+                'values' => ['Qualität', 'Nachhaltigkeit', 'Gastfreundschaft'],
+            ],
+            'voice' => [
+                'dimensions' => [
+                    ['name' => 'Formalität', 'left' => 'Formell', 'right' => 'Locker', 'value' => 60],
+                    ['name' => 'Ton', 'left' => 'Ernst', 'right' => 'Humorvoll', 'value' => 45],
+                ],
+                'dos' => ['Warm und einladend schreiben'],
+                'donts' => ['Fachjargon ohne Erklärung'],
+            ],
+            'visuals' => [
+                'colors' => ['primary' => '#1B4332', 'secondary' => '#D8F3DC', 'accent' => '#E9C46A'],
+                'typography' => [
+                    ['role' => 'h1', 'font_family' => 'Playfair Display', 'font_weight' => 700],
+                    ['role' => 'body', 'font_family' => 'Inter', 'font_weight' => 400],
+                ],
+            ],
+            'audience' => [
+                'personas' => [
+                    ['name' => 'Eventplanerin', 'age' => 38, 'goals' => ['reibungsloses Event'], 'pain_points' => ['unzuverlässige Dienstleister']],
+                ],
+            ],
+            'content_strategy' => [
+                'content_types' => ['pillar', 'how-to', 'guide'],
+                'search_intents' => ['informational', 'commercial'],
+            ],
+            'ctas' => [
+                ['label' => 'Angebot anfragen', 'type' => 'primary', 'funnel_stage' => 'decision'],
+            ],
+        ];
+    }
+
     /** Verbindungstest über die Container-Connection. */
     public function testConnection(FlynkContainer $container): array
     {
