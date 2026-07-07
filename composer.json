@@ -1,0 +1,31 @@
+{
+    "name": "martin3r/platform-flynk-connector",
+    "description": "FLYNK Connector Module for Platform — verortet Container an Organisations-Knoten und pusht sie via FLYNK REST API",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Platform Team",
+            "email": "team@platform.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Platform\\FlynkConnector\\": "src/",
+            "Platform\\FlynkConnector\\Database\\": "database/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Platform\\FlynkConnector\\FlynkConnectorServiceProvider"
+            ]
+        }
+    },
+    "require": {
+        "martin3r/platform-organization": "*",
+        "martin3r/platform-integrations": "*"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
