@@ -39,6 +39,8 @@ class FlynkContainerEvent extends Model
         return match ($this->type) {
             'created', 'linked' => 'heroicon-o-link',
             'updated' => 'heroicon-o-arrow-path',
+            'pushed' => 'heroicon-o-paper-airplane',
+            'feedback' => 'heroicon-o-inbox-arrow-down',
             'meta' => 'heroicon-o-information-circle',
             'unregistered' => 'heroicon-o-x-circle',
             'error' => 'heroicon-o-exclamation-triangle',
@@ -52,6 +54,8 @@ class FlynkContainerEvent extends Model
         return match ($this->type) {
             'created', 'linked' => 'success',
             'updated' => 'info',
+            'pushed' => 'info',
+            'feedback' => 'success',
             'meta' => 'info',
             'unregistered' => 'warning',
             'error' => 'danger',

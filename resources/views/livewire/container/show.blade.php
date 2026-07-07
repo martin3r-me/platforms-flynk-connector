@@ -113,9 +113,13 @@
 
                 @if($container->isLinked())
                     <div class="flex flex-wrap items-center gap-2">
-                        <x-ui-button variant="primary" size="sm" wire:click="pushUpdate" wire:loading.attr="disabled">
+                        <x-ui-button variant="primary" size="sm" wire:click="pushNow" wire:loading.attr="disabled">
+                            @svg('heroicon-o-paper-airplane', 'w-4 h-4')
+                            Kontext an FLYNK pushen
+                        </x-ui-button>
+                        <x-ui-button variant="secondary" size="sm" wire:click="pushUpdate" wire:loading.attr="disabled">
                             @svg('heroicon-o-arrow-path', 'w-4 h-4')
-                            Update mit Daten pushen
+                            Projektfelder aktualisieren
                         </x-ui-button>
                         <x-ui-button variant="secondary" size="sm" wire:click="syncMeta" wire:loading.attr="disabled">
                             @svg('heroicon-o-arrow-down-tray', 'w-4 h-4')
@@ -239,6 +243,41 @@
                 <div x-show="open" x-collapse x-cloak class="mt-3">
                     <pre class="text-[10px] leading-relaxed bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto" style="font-family: 'JetBrains Mono', monospace;">{{ $this->pushPreviewJson }}</pre>
                 </div>
+            </div>
+
+            {{-- Pushes (Vorgänge + FLYNK-Feedback) --}}
+            <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">
+                <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-4" style="font-family: 'JetBrains Mono', monospace;">Pushes</h2>
+                @forelse($this->pushes as $push)
+                    <div class="border-b border-gray-100 last:border-0 py-2.5">
+                        <div class="flex items-center gap-2">
+                            <x-ui-badge :color="$push->status->color()" size="xs">{{ $push->status->label() }}</x-ui-badge>
+                            <span class="text-[11px] text-gray-500 truncate" style="font-family: 'JetBrains Mono', monospace;">{{ \Illuminate\Support\Str::limit($push->uuid, 18) }}</span>
+                            <span class="text-[10px] text-gray-400 ml-auto" style="font-family: 'JetBrains Mono', monospace;">{{ $push->created_at->format('d.m. H:i') }}</span>
+                            @if(in_array($push->status->value, ['sent','accepted','processing']))
+                                <button wire:click="pullFeedback({{ $push->id }})" class="text-[10px] font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline flex-shrink-0">
+                                    Feedback
+                                </button>
+                            @endif
+                        </div>
+                        @php $results = $push->results(); @endphp
+                        @if(!empty($results))
+                            <div class="mt-1.5 ml-1 space-y-1">
+                                @foreach($results as $r)
+                                    <div class="flex items-center gap-1.5 text-[11px] text-gray-600">
+                                        @svg('heroicon-o-document-text', 'w-3 h-3 text-gray-400 flex-shrink-0')
+                                        <span class="truncate">{{ $r['title'] ?? ($r['type'] ?? 'Ergebnis') }}</span>
+                                        @if(!empty($r['url']))
+                                            <a href="{{ $r['url'] }}" target="_blank" rel="noopener" class="text-[rgb(var(--ui-primary-rgb))] hover:underline">@svg('heroicon-o-arrow-top-right-on-square', 'w-3 h-3')</a>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @empty
+                    <p class="text-xs text-gray-400">Noch keine Pushes.</p>
+                @endforelse
             </div>
 
             {{-- Einstellungen --}}

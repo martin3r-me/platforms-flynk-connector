@@ -8,6 +8,7 @@ use Livewire\Component;
 use Platform\FlynkConnector\Enums\FlynkContainerStatus;
 use Platform\FlynkConnector\Models\FlynkContainer;
 use Platform\FlynkConnector\Services\FlynkContainerService;
+use Platform\FlynkConnector\Services\FlynkPushService;
 use Platform\Integrations\Models\Integration;
 use Platform\Integrations\Models\IntegrationConnection;
 
@@ -60,13 +61,48 @@ class Show extends Component
         return $this->container->events()->with('user')->orderByDesc('created_at')->take(30)->get();
     }
 
-    /** Pretty-JSON der Push-Vorschau (Envelope inkl. Vorgang), zum Weitergeben an FLYNK. */
+    /** Pretty-JSON der Push-Vorschau (Envelope inkl. push-Block), zum Weitergeben an FLYNK. */
     #[Computed]
     public function pushPreviewJson(): string
     {
         $envelope = app(FlynkContainerService::class)->previewEnvelope($this->container);
 
         return json_encode($envelope, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    #[Computed]
+    public function pushes()
+    {
+        return $this->container->pushes()->orderByDesc('created_at')->take(20)->get();
+    }
+
+    /** Manueller Kontext-Push (immer senden). */
+    public function pushNow(FlynkPushService $service): void
+    {
+        try {
+            $result = $service->push($this->container, true);
+            $this->dispatch('toast', message: ($result['skipped'] ?? false) ? 'Kein Delta — nichts gesendet.' : 'Kontext an FLYNK gepusht.');
+        } catch (\Throwable $e) {
+            $this->dispatch('toast', message: 'Push fehlgeschlagen: '.$e->getMessage());
+        }
+        $this->refreshState();
+    }
+
+    /** Feedback zu einem Push abrufen. */
+    public function pullFeedback(int $pushId, FlynkPushService $service): void
+    {
+        $push = $this->container->pushes()->find($pushId);
+        if (! $push) {
+            return;
+        }
+
+        try {
+            $service->pullFeedback($push);
+            $this->dispatch('toast', message: 'Feedback aktualisiert.');
+        } catch (\Throwable $e) {
+            $this->dispatch('toast', message: 'Feedback-Abruf fehlgeschlagen: '.$e->getMessage());
+        }
+        $this->refreshState();
     }
 
     #[Computed]
@@ -186,7 +222,7 @@ class Show extends Component
     protected function refreshState(): void
     {
         $this->container->refresh()->load(['connection', 'user']);
-        unset($this->events);
+        unset($this->events, $this->pushes);
         $this->loadForm();
     }
 

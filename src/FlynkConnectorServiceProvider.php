@@ -66,6 +66,14 @@ class FlynkConnectorServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'flynk-connector');
         $this->registerLivewireComponents();
 
+        // Console-Commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                \Platform\FlynkConnector\Console\Commands\PushFlynkContexts::class,
+                \Platform\FlynkConnector\Console\Commands\PullFlynkFeedback::class,
+            ]);
+        }
+
         // Tools registrieren
         $this->registerTools();
 
@@ -96,6 +104,7 @@ class FlynkConnectorServiceProvider extends ServiceProvider
             $registry->register(new \Platform\FlynkConnector\Tools\PushFlynkContainerTool());
             $registry->register(new \Platform\FlynkConnector\Tools\UnregisterFlynkContainerTool());
             $registry->register(new \Platform\FlynkConnector\Tools\SyncFlynkProjectMetaTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\PushFlynkContextTool());
         } catch (\Throwable $e) {
             \Log::warning('FlynkConnector: Tool-Registrierung fehlgeschlagen', ['error' => $e->getMessage()]);
         }

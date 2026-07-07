@@ -60,6 +60,7 @@ class FlynkContainer extends Model
 
     public function events(): HasMany { return $this->hasMany(FlynkContainerEvent::class, 'flynk_container_id'); }
     public function syncStates(): HasMany { return $this->hasMany(FlynkSyncState::class, 'flynk_container_id'); }
+    public function pushes(): HasMany { return $this->hasMany(FlynkPush::class, 'flynk_container_id'); }
 
     /** Verortung an Organisations-Knoten via Dimension-Links (Plattform-Standard). */
     public function dimensionLinks(): MorphMany
