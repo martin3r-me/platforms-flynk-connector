@@ -10,7 +10,6 @@ use Platform\FlynkConnector\Enums\FlynkContainerStatus;
 use Platform\FlynkConnector\Models\FlynkContainer;
 use Platform\FlynkConnector\Services\FlynkContainerService;
 use Platform\FlynkConnector\Tools\Concerns\ResolvesFlynkTeam;
-use Platform\Organization\Services\EntityDimensionBridge;
 
 class CreateFlynkContainerTool implements ToolContract, ToolMetadataContract
 {
@@ -32,7 +31,6 @@ class CreateFlynkContainerTool implements ToolContract, ToolMetadataContract
                 'team_id'                   => ['type' => 'integer'],
                 'name'                      => ['type' => 'string', 'description' => 'ERFORDERLICH: Name des Containers.'],
                 'description'               => ['type' => 'string'],
-                'entity_id'                 => ['type' => 'integer', 'description' => 'Optional: Organisations-Knoten (Verortung via Dimension-Link).'],
                 'integration_connection_id' => ['type' => 'integer', 'description' => 'Optional: FLYNK-Verbindung (sonst Team-Standard).'],
                 'link_mode'                 => ['type' => 'string', 'description' => 'create | link | none. Default: none.'],
                 'external_id'               => ['type' => 'string', 'description' => 'FLYNK-Project-UUID (erforderlich bei link_mode=link).'],
@@ -69,11 +67,6 @@ class CreateFlynkContainerTool implements ToolContract, ToolMetadataContract
                 'integration_connection_id' => ! empty($arguments['integration_connection_id']) ? (int) $arguments['integration_connection_id'] : null,
                 'status'                    => FlynkContainerStatus::DRAFT,
             ]);
-
-            // Verortung am Knoten via Dimension-Link
-            if (! empty($arguments['entity_id'])) {
-                EntityDimensionBridge::createLink((int) $arguments['entity_id'], 'flynk_container', $container->id);
-            }
 
             $service = app(FlynkContainerService::class);
             $flynkError = null;
