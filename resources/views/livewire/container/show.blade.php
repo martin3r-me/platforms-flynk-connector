@@ -98,6 +98,10 @@
                             @svg('heroicon-o-arrow-path', 'w-4 h-4')
                             Update mit Daten pushen
                         </x-ui-button>
+                        <x-ui-button variant="secondary" size="sm" wire:click="syncMeta" wire:loading.attr="disabled">
+                            @svg('heroicon-o-arrow-down-tray', 'w-4 h-4')
+                            Meta aktualisieren
+                        </x-ui-button>
                         <x-ui-button variant="secondary" size="sm" wire:click="testConnection">
                             @svg('heroicon-o-signal', 'w-4 h-4')
                             Verbindung testen
@@ -126,6 +130,55 @@
                     </div>
                 @endif
             </div>
+
+            {{-- FLYNK-Meta --}}
+            @php $flynkMeta = $container->metadata['flynk'] ?? null; @endphp
+            @if($flynkMeta)
+                <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)]" style="font-family: 'JetBrains Mono', monospace;">FLYNK-Projekt</h2>
+                        @if(!empty($flynkMeta['fetched_at']))
+                            <span class="text-[10px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">
+                                Stand {{ \Illuminate\Support\Carbon::parse($flynkMeta['fetched_at'])->format('d.m.Y H:i') }}
+                            </span>
+                        @endif
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                        @foreach([
+                            'name' => 'Name', 'client_name' => 'Kunde', 'agency' => 'Agentur',
+                            'status' => 'Status', 'timezone' => 'Zeitzone', 'forge_server' => 'Forge-Server',
+                        ] as $key => $label)
+                            @if(!empty($flynkMeta[$key]))
+                                <div class="flex justify-between gap-2 border-b border-gray-100 py-1">
+                                    <span class="text-gray-500">{{ $label }}</span>
+                                    <span class="font-medium text-gray-800 truncate">{{ $flynkMeta[$key] }}</span>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                    @if(!empty($flynkMeta['production_url']) || !empty($flynkMeta['github_repo']))
+                        <div class="flex flex-wrap gap-3 mt-3 text-xs">
+                            @if(!empty($flynkMeta['production_url']))
+                                <a href="{{ $flynkMeta['production_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[rgb(var(--ui-primary-rgb))] hover:underline">
+                                    @svg('heroicon-o-globe-alt', 'w-3.5 h-3.5') Website
+                                </a>
+                            @endif
+                            @if(!empty($flynkMeta['github_repo']))
+                                <a href="{{ $flynkMeta['github_repo'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[rgb(var(--ui-primary-rgb))] hover:underline">
+                                    @svg('heroicon-o-code-bracket', 'w-3.5 h-3.5') Repo
+                                </a>
+                            @endif
+                        </div>
+                    @endif
+                    @if(!empty($flynkMeta['stack']) && is_array($flynkMeta['stack']))
+                        <div class="flex flex-wrap gap-1.5 mt-3">
+                            @foreach($flynkMeta['stack'] as $tech)
+                                <span class="px-2 py-0.5 rounded-full bg-black/[0.04] text-[10px] text-gray-600">{{ $tech }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            @endif
 
             {{-- Einstellungen --}}
             <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">

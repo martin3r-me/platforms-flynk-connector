@@ -155,6 +155,18 @@ class Show extends Component
         $this->refreshState();
     }
 
+    /** FLYNK-Projekt-Metadaten ziehen und cachen. */
+    public function syncMeta(FlynkContainerService $service): void
+    {
+        try {
+            $service->syncMeta($this->container);
+            $this->dispatch('toast', message: 'FLYNK-Meta aktualisiert.');
+        } catch (\Throwable $e) {
+            $this->dispatch('toast', message: 'Meta-Abruf fehlgeschlagen: '.$e->getMessage());
+        }
+        $this->refreshState();
+    }
+
     public function testConnection(FlynkContainerService $service): void
     {
         try {

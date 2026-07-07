@@ -174,6 +174,66 @@ class FlynkContainerService
         return $container;
     }
 
+    /**
+     * Zieht die FLYNK-Projekt-Metadaten (GET /api/projects/{uuid}) und cached
+     * eine kuratierte Auswahl unter metadata['flynk']. Gibt die Meta zurück.
+     */
+    public function syncMeta(FlynkContainer $container): array
+    {
+        if (! $container->external_id) {
+            throw new \RuntimeException('Container ist mit keinem FLYNK-Project verbunden.');
+        }
+
+        $connection = $this->resolveConnection($container);
+
+        try {
+            $response = $this->api->getProject($connection, $container->external_id);
+        } catch (FlynkApiException $e) {
+            $this->handleError($container, 'Meta-Abruf fehlgeschlagen', $e);
+            throw $e;
+        }
+
+        $project = $response['data'] ?? $response;
+        $meta = $this->buildMeta($project);
+
+        $metadata = $container->metadata ?? [];
+        $metadata['flynk'] = $meta;
+
+        $container->update([
+            'metadata' => $metadata,
+            'external_url' => $meta['production_url'] ?? $container->external_url,
+            'last_synced_at' => now(),
+        ]);
+
+        $this->logEvent($container, 'meta', 'Meta aktualisiert', 'FLYNK-Projekt-Metadaten abgerufen.', $meta);
+
+        return $meta;
+    }
+
+    /** Kuratierte Meta-Auswahl aus dem FLYNK-Project-Datensatz. */
+    protected function buildMeta(array $project): array
+    {
+        $stack = $project['stack'] ?? null;
+        if (is_string($stack)) {
+            $decoded = json_decode($stack, true);
+            $stack = is_array($decoded) ? $decoded : $stack;
+        }
+
+        return [
+            'name'           => $project['name'] ?? null,
+            'client_name'    => $project['client_name'] ?? null,
+            'agency'         => $project['agency'] ?? null,
+            'status'         => $project['status'] ?? null,
+            'production_url' => $project['production_url'] ?? ($project['url'] ?? null),
+            'github_repo'    => $project['github_repo'] ?? null,
+            'forge_server'   => $project['forge_server'] ?? null,
+            'timezone'       => $project['timezone'] ?? null,
+            'stack'          => $stack,
+            'updated_at'     => $project['updated_at'] ?? null,
+            'fetched_at'     => now()->toIso8601String(),
+        ];
+    }
+
     /** Verbindungstest über die Container-Connection. */
     public function testConnection(FlynkContainer $container): array
     {

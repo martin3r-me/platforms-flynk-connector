@@ -65,11 +65,31 @@ class FlynkConnectorServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'flynk-connector');
         $this->registerLivewireComponents();
 
+        // Tools registrieren
+        $this->registerTools();
+
         // Error Reporter
         try {
             resolve(\Platform\Core\Services\ErrorReporterRegistry::class)
                 ->register('flynk-connector', 'Platform\\FlynkConnector');
         } catch (\Throwable $e) {}
+    }
+
+    protected function registerTools(): void
+    {
+        try {
+            $registry = resolve(\Platform\Core\Tools\ToolRegistry::class);
+
+            $registry->register(new \Platform\FlynkConnector\Tools\ListFlynkContainersTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\GetFlynkContainerTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\CreateFlynkContainerTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\LinkFlynkContainerTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\PushFlynkContainerTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\UnregisterFlynkContainerTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\SyncFlynkProjectMetaTool());
+        } catch (\Throwable $e) {
+            \Log::warning('FlynkConnector: Tool-Registrierung fehlgeschlagen', ['error' => $e->getMessage()]);
+        }
     }
 
     protected function registerLivewireComponents(): void
