@@ -274,16 +274,50 @@ class FlynkContainerService
         ];
     }
 
-    /** Vorschau-Envelope für die UI (realer Kopf + Beispiel-Kontext). */
-    public function previewEnvelope(FlynkContainer $container): array
+    /**
+     * Sammelt den Push-Kontext für einen Container: Knoten + Kontext aller
+     * registrierten Lieferanten (Brands, später Recruiting, Events, …).
+     */
+    public function assembleContext(FlynkContainer $container): array
     {
         $node = $container->primaryEntity();
+        if (! $node) {
+            return [];
+        }
 
-        $context = [
-            'node' => $node ? ['id' => $node->id, 'name' => $node->name] : null,
-            'brand' => $this->exampleBrandContext(),
-            // später weitere Quellen: recruiting, events, food …
-        ];
+        $context = ['node' => ['id' => $node->id, 'name' => $node->name]];
+
+        try {
+            $registry = app(\Platform\FlynkConnector\Services\FlynkContextRegistry::class);
+            foreach ($registry->all() as $provider) {
+                try {
+                    $slice = $provider->contextForEntity($node);
+                    if (! empty($slice)) {
+                        $context[$provider->contextKey()] = $slice;
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('FLYNK Kontext-Lieferant fehlgeschlagen', [
+                        'provider' => get_class($provider),
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Registry nicht verfügbar
+        }
+
+        return $context;
+    }
+
+    /** Vorschau-Envelope für die UI (realer Kontext, Beispiel-Brand als Fallback). */
+    public function previewEnvelope(FlynkContainer $container): array
+    {
+        $context = $this->assembleContext($container);
+
+        // Solange kein Brand am Knoten hängt: Beispiel-Struktur zeigen.
+        if (empty($context['brand'])) {
+            $context['brand'] = ['_example' => true] + $this->exampleBrandContext();
+        }
 
         return $this->buildPushEnvelope($container, $context, '<push-uuid assigned on push>');
     }

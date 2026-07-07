@@ -16,7 +16,8 @@ class FlynkConnectorServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Registry der Kontext-Lieferanten (Ports & Adapters)
+        $this->app->singleton(\Platform\FlynkConnector\Services\FlynkContextRegistry::class);
     }
 
     public function boot(): void
