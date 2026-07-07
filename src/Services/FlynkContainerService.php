@@ -259,11 +259,11 @@ class FlynkContainerService
      * (Brands zuerst) gefüllt. Bis dahin liefert dies eine repräsentative
      * Vorschau/Struktur — geeignet als Vertrag für den FLYNK-Ingest-Endpunkt.
      */
-    public function buildPushEnvelope(FlynkContainer $container, array $context, string $reference): array
+    public function buildPushEnvelope(FlynkContainer $container, array $context, string $pushUuid): array
     {
         return [
-            'vorgang' => [
-                'reference'          => $reference,
+            'push' => [
+                'uuid'               => $pushUuid,
                 'container_uuid'     => $container->uuid,
                 'external_reference' => $container->uuid,
                 'project_id'         => $container->external_id,
@@ -285,7 +285,7 @@ class FlynkContainerService
             // später weitere Quellen: recruiting, events, food …
         ];
 
-        return $this->buildPushEnvelope($container, $context, 'VG-<wird beim Push vergeben>');
+        return $this->buildPushEnvelope($container, $context, '<push-uuid assigned on push>');
     }
 
     /** Kanonisches JSON (rekursiv nach Keys sortiert) für stabile Hashes. */

@@ -235,7 +235,7 @@
                         <span x-text="open ? 'Ausblenden' : 'JSON anzeigen'"></span>
                     </button>
                 </div>
-                <p class="text-[11px] text-gray-500 mt-1">Struktur des Envelopes (Vorgang + Kontext), den der Connector an FLYNK pusht. Der <code>context.brand</code>-Block ist derzeit ein Beispiel und wird ab dem Brands-Port real gefüllt.</p>
+                <p class="text-[11px] text-gray-500 mt-1">Struktur des Envelopes (<code>push</code> + <code>context</code>), den der Connector an FLYNK sendet. Der <code>context.brand</code>-Block ist derzeit ein Beispiel und wird ab dem Brands-Port real gefüllt.</p>
                 <div x-show="open" x-collapse x-cloak class="mt-3">
                     <pre class="text-[10px] leading-relaxed bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto" style="font-family: 'JetBrains Mono', monospace;">{{ $this->pushPreviewJson }}</pre>
                 </div>
