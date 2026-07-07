@@ -96,15 +96,17 @@
     <x-ui-page-container>
         <div class="py-6 max-w-3xl space-y-6">
 
-            {{-- Verortung (Organisations-Knoten via Dimension-Links) --}}
+            {{-- Verortung (Organisations-Knoten via Dimension-Links; Pflege per MCP) --}}
             <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">
-                <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-4" style="font-family: 'JetBrains Mono', monospace;">Verortung</h2>
-                <livewire:organization::dimension-linker
-                    :contextType="\Platform\FlynkConnector\Models\FlynkContainer::class"
-                    :contextId="$container->id"
-                    dimension="entities"
-                    :key="'dimlink-'.$container->id"
-                />
+                <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-3" style="font-family: 'JetBrains Mono', monospace;">Verortung</h2>
+                @forelse($container->linkedEntities() as $entity)
+                    <div class="flex items-center gap-2 text-sm text-gray-700 py-0.5">
+                        @svg('heroicon-o-building-office', 'w-4 h-4 text-gray-400 flex-shrink-0')
+                        <span>{{ $entity->name }}</span>
+                    </div>
+                @empty
+                    <p class="text-xs text-gray-400">Kein Knoten verknüpft — Verortung erfolgt per MCP.</p>
+                @endforelse
             </div>
 
             {{-- FLYNK-Aktionen --}}

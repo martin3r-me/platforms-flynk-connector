@@ -105,6 +105,7 @@ class FlynkConnectorServiceProvider extends ServiceProvider
             $registry->register(new \Platform\FlynkConnector\Tools\UnregisterFlynkContainerTool());
             $registry->register(new \Platform\FlynkConnector\Tools\SyncFlynkProjectMetaTool());
             $registry->register(new \Platform\FlynkConnector\Tools\PushFlynkContextTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\LinkFlynkContainerEntityTool());
         } catch (\Throwable $e) {
             \Log::warning('FlynkConnector: Tool-Registrierung fehlgeschlagen', ['error' => $e->getMessage()]);
         }
