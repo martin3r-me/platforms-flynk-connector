@@ -74,7 +74,6 @@ class FlynkContainerService
             $container->update([
                 'integration_connection_id' => $connection->id,
                 'external_id' => $externalId,
-                'external_url' => $this->extractProjectUrl($response),
                 'status' => FlynkContainerStatus::ACTIVE,
                 'last_synced_at' => now(),
             ]);
@@ -101,7 +100,6 @@ class FlynkContainerService
             $container->update([
                 'integration_connection_id' => $connection->id,
                 'external_id' => $externalId,
-                'external_url' => $this->extractProjectUrl($response),
                 'status' => FlynkContainerStatus::ACTIVE,
                 'last_synced_at' => now(),
             ]);
@@ -281,11 +279,6 @@ class FlynkContainerService
             ?? $response['data']['uuid']
             ?? $response['uuid']
             ?? null;
-    }
-
-    protected function extractProjectUrl(array $response): ?string
-    {
-        return $response['data']['url'] ?? $response['url'] ?? null;
     }
 
     protected function handleError(FlynkContainer $container, string $title, FlynkApiException $e): void

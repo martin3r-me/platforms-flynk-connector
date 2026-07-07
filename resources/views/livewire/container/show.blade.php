@@ -39,12 +39,15 @@
                     <div class="text-gray-700 break-all" style="font-family: 'JetBrains Mono', monospace;">
                         {{ $container->external_id ?? 'nicht verbunden' }}
                     </div>
-                    @if($container->external_url)
-                        <a href="{{ $container->external_url }}" target="_blank" rel="noopener" class="text-[rgb(var(--ui-primary-rgb))] hover:underline inline-flex items-center gap-1 mt-1">
-                            @svg('heroicon-o-arrow-top-right-on-square', 'w-3 h-3') Öffnen
-                        </a>
-                    @endif
                 </div>
+                @if($container->external_url)
+                    <div class="border-t border-gray-200 pt-3">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">Live-Website</div>
+                        <a href="{{ $container->external_url }}" target="_blank" rel="noopener" class="text-[rgb(var(--ui-primary-rgb))] hover:underline inline-flex items-center gap-1 break-all">
+                            @svg('heroicon-o-globe-alt', 'w-3 h-3 flex-shrink-0') {{ $container->external_url }}
+                        </a>
+                    </div>
+                @endif
                 @if($container->last_synced_at)
                     <div class="border-t border-gray-200 pt-3">
                         <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">Letzter Sync</div>
