@@ -25,8 +25,7 @@
             <div class="p-4 space-y-4 text-xs">
                 <div>
                     <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">Verortung</div>
-                    @php $linkedEntities = $container->linkedEntities(); @endphp
-                    @forelse($linkedEntities as $entity)
+                    @forelse($container->linkedEntities() as $entity)
                         <div class="flex items-center gap-1.5 text-gray-700">
                             @svg('heroicon-o-building-office', 'w-3.5 h-3.5 text-gray-400')
                             <span>{{ $entity->name }}</span>
@@ -51,12 +50,6 @@
                         <a href="{{ $container->external_url }}" target="_blank" rel="noopener" class="text-[rgb(var(--ui-primary-rgb))] hover:underline inline-flex items-center gap-1 break-all">
                             @svg('heroicon-o-globe-alt', 'w-3 h-3 flex-shrink-0') {{ $container->external_url }}
                         </a>
-                    </div>
-                @endif
-                @if($container->last_synced_at)
-                    <div class="border-t border-gray-200 pt-3">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">Letzter Sync</div>
-                        <div class="text-gray-700" style="font-family: 'JetBrains Mono', monospace;">{{ $container->last_synced_at->format('d.m.Y H:i') }}</div>
                     </div>
                 @endif
             </div>
@@ -94,165 +87,233 @@
 
     {{-- Main content --}}
     <x-ui-page-container>
-        <div class="py-6 max-w-3xl space-y-6">
+        @php
+            $flynkMeta = $container->metadata['flynk'] ?? [];
+            $completeness = $flynkMeta['context_completeness'] ?? null;
+            $pct = $completeness !== null ? (int) round((float) $completeness * (($completeness <= 1) ? 100 : 1)) : null;
+            $circ = 113; $ringOffset = $pct !== null ? $circ - ($circ * $pct / 100) : $circ;
+            $pushCount = $container->pushes()->count();
+        @endphp
 
-            {{-- Verortung (Organisations-Knoten via Dimension-Links; Pflege per MCP) --}}
-            <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">
-                <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-3" style="font-family: 'JetBrains Mono', monospace;">Verortung</h2>
-                @forelse($container->linkedEntities() as $entity)
-                    <div class="flex items-center gap-2 text-sm text-gray-700 py-0.5">
-                        @svg('heroicon-o-building-office', 'w-4 h-4 text-gray-400 flex-shrink-0')
-                        <span>{{ $entity->name }}</span>
+        <div class="py-6 max-w-4xl space-y-5">
+
+            {{-- ═══ Hero ═══ --}}
+            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-6">
+                <div class="flex items-start justify-between gap-4 flex-wrap">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 text-[11px] text-gray-400 mb-1 flex-wrap">
+                            <span style="font-family: 'JetBrains Mono', monospace;">FLYNK Container</span>
+                            @foreach($container->linkedEntities() as $entity)
+                                <span>&middot;</span>
+                                <span class="inline-flex items-center gap-1">@svg('heroicon-o-building-office', 'w-3 h-3') {{ $entity->name }}</span>
+                            @endforeach
+                        </div>
+                        <h1 class="text-xl font-bold tracking-tight text-[color:var(--ui-text)]">{{ $container->name }}</h1>
+                        <div class="flex items-center gap-3 mt-2 text-xs flex-wrap">
+                            @if($container->external_id)
+                                <span class="inline-flex items-center gap-1 text-gray-400" style="font-family: 'JetBrains Mono', monospace;">
+                                    @svg('heroicon-o-link', 'w-3.5 h-3.5') {{ \Illuminate\Support\Str::limit($container->external_id, 22) }}
+                                </span>
+                            @endif
+                            @if($container->external_url)
+                                <a href="{{ $container->external_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[rgb(var(--ui-primary-rgb))] font-medium hover:underline">
+                                    @svg('heroicon-o-globe-alt', 'w-3.5 h-3.5') Website
+                                </a>
+                            @endif
+                        </div>
                     </div>
-                @empty
-                    <p class="text-xs text-gray-400">Kein Knoten verknüpft — Verortung erfolgt per MCP.</p>
-                @endforelse
-            </div>
+                    <x-ui-badge :color="$container->status->color()" size="sm">{{ $container->status->label() }}</x-ui-badge>
+                </div>
 
-            {{-- FLYNK-Aktionen --}}
-            <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">
-                <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-4" style="font-family: 'JetBrains Mono', monospace;">FLYNK-Aktionen</h2>
+                {{-- Stat strip --}}
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+                    <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Offene Aufgaben</div>
+                        <div class="text-2xl font-bold text-[rgb(var(--ui-primary-rgb))]" style="font-family: 'JetBrains Mono', monospace;">{{ $flynkMeta['open_tasks'] ?? '—' }}</div>
+                    </div>
+                    <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3 flex items-center gap-3">
+                        <svg width="46" height="46" viewBox="0 0 46 46" class="flex-shrink-0">
+                            <circle cx="23" cy="23" r="18" fill="none" stroke="#E5E7EB" stroke-width="5"/>
+                            <circle cx="23" cy="23" r="18" fill="none" stroke="rgb(var(--ui-primary-rgb))" stroke-width="5" stroke-linecap="round"
+                                    stroke-dasharray="{{ $circ }}" stroke-dashoffset="{{ $ringOffset }}" transform="rotate(-90 23 23)"
+                                    style="transition: stroke-dashoffset .6s ease;" />
+                        </svg>
+                        <div>
+                            <div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-0.5" style="font-family: 'JetBrains Mono', monospace;">Context</div>
+                            <div class="text-lg font-bold" style="font-family: 'JetBrains Mono', monospace;">{{ $pct !== null ? $pct.'%' : '—' }}</div>
+                        </div>
+                    </div>
+                    <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Pushes</div>
+                        <div class="text-2xl font-bold" style="font-family: 'JetBrains Mono', monospace;">{{ $pushCount }}</div>
+                    </div>
+                    <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Letzter Sync</div>
+                        <div class="text-sm font-semibold text-gray-700 mt-1.5" style="font-family: 'JetBrains Mono', monospace;">{{ $container->last_synced_at?->diffForHumans() ?? '—' }}</div>
+                    </div>
+                </div>
 
-                @if($container->isLinked())
-                    <div class="flex flex-wrap items-center gap-2">
+                {{-- Actions --}}
+                <div class="flex flex-wrap items-center gap-2 mt-5">
+                    @if($container->isLinked())
                         <x-ui-button variant="primary" size="sm" wire:click="pushNow" wire:loading.attr="disabled">
                             @svg('heroicon-o-paper-airplane', 'w-4 h-4')
                             Kontext an FLYNK pushen
-                        </x-ui-button>
-                        <x-ui-button variant="secondary" size="sm" wire:click="pushUpdate" wire:loading.attr="disabled">
-                            @svg('heroicon-o-arrow-path', 'w-4 h-4')
-                            Projektfelder aktualisieren
                         </x-ui-button>
                         <x-ui-button variant="secondary" size="sm" wire:click="syncMeta" wire:loading.attr="disabled">
                             @svg('heroicon-o-arrow-down-tray', 'w-4 h-4')
                             Meta aktualisieren
                         </x-ui-button>
+                        <x-ui-button variant="secondary" size="sm" wire:click="pushUpdate" wire:loading.attr="disabled">
+                            @svg('heroicon-o-arrow-path', 'w-4 h-4')
+                            Projektfelder
+                        </x-ui-button>
                         <x-ui-button variant="secondary" size="sm" wire:click="testConnection">
                             @svg('heroicon-o-signal', 'w-4 h-4')
                             Verbindung testen
                         </x-ui-button>
-                        <x-ui-button variant="danger" size="sm" wire:click="unregister" wire:confirm="Container wirklich von FLYNK abmelden? Das FLYNK-Project wird entfernt.">
-                            @svg('heroicon-o-x-circle', 'w-4 h-4')
-                            Abmelden
-                        </x-ui-button>
-                    </div>
-                @else
-                    <p class="text-xs text-gray-500 mb-3">Dieser Container ist mit keinem FLYNK-Project verbunden.</p>
-                    <div class="flex flex-wrap items-center gap-2 mb-4">
+                        <div class="ml-auto">
+                            <x-ui-button variant="danger" size="sm" wire:click="unregister" wire:confirm="Container wirklich von FLYNK abmelden? Das FLYNK-Project wird entfernt.">
+                                @svg('heroicon-o-x-circle', 'w-4 h-4')
+                                Abmelden
+                            </x-ui-button>
+                        </div>
+                    @else
                         <x-ui-button variant="primary" size="sm" wire:click="createRemote" wire:loading.attr="disabled">
                             @svg('heroicon-o-plus', 'w-4 h-4')
                             In FLYNK anlegen
                         </x-ui-button>
-                    </div>
-                    <div class="flex items-end gap-2 pt-3 border-t border-gray-100">
-                        <div class="flex-1">
-                            <x-ui-input-text wire:model="relinkExternalId" label="Bestehendes Project verknüpfen (UUID)" placeholder="FLYNK-Project-UUID" size="sm" />
+                        <div class="flex items-end gap-2 flex-1 min-w-[240px]">
+                            <div class="flex-1">
+                                <x-ui-input-text wire:model="relinkExternalId" label="Bestehendes Project verknüpfen (UUID)" placeholder="FLYNK-Project-UUID" size="sm" />
+                            </div>
+                            <x-ui-button variant="secondary" size="sm" wire:click="relink">
+                                @svg('heroicon-o-link', 'w-4 h-4')
+                                Verknüpfen
+                            </x-ui-button>
                         </div>
-                        <x-ui-button variant="secondary" size="sm" wire:click="relink">
-                            @svg('heroicon-o-link', 'w-4 h-4')
-                            Verknüpfen
-                        </x-ui-button>
-                    </div>
-                @endif
+                    @endif
+                </div>
             </div>
 
-            {{-- FLYNK-Meta --}}
-            @php $flynkMeta = $container->metadata['flynk'] ?? null; @endphp
-            @if($flynkMeta)
-                <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)]" style="font-family: 'JetBrains Mono', monospace;">FLYNK-Projekt</h2>
-                        @if(!empty($flynkMeta['fetched_at']))
-                            <span class="text-[10px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">
-                                Stand {{ \Illuminate\Support\Carbon::parse($flynkMeta['fetched_at'])->format('d.m.Y H:i') }}
-                            </span>
-                        @endif
-                    </div>
+            {{-- ═══ FLYNK-Projekt + Pushes ═══ --}}
+            <div class="grid lg:grid-cols-5 gap-5">
 
-                    {{-- Highlight: offene Aufgaben + Dev-/Staging-URL --}}
-                    @if(($flynkMeta['open_tasks'] ?? null) !== null || !empty($flynkMeta['dev_url']))
-                        <div class="flex flex-wrap items-center gap-2 mb-3">
-                            @if(($flynkMeta['open_tasks'] ?? null) !== null)
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[rgb(var(--ui-primary-rgb))]/10 text-[rgb(var(--ui-primary-rgb))] text-xs font-medium">
-                                    @svg('heroicon-o-clipboard-document-check', 'w-3.5 h-3.5')
-                                    {{ $flynkMeta['open_tasks'] }}@if(($flynkMeta['total_tasks'] ?? null) !== null)/{{ $flynkMeta['total_tasks'] }}@endif offene Aufgaben
+                {{-- FLYNK-Projekt --}}
+                @if(!empty($flynkMeta))
+                    <div class="lg:col-span-3 rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)]" style="font-family: 'JetBrains Mono', monospace;">FLYNK-Projekt</h2>
+                            @if(!empty($flynkMeta['fetched_at']))
+                                <span class="text-[10px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">
+                                    Stand {{ \Illuminate\Support\Carbon::parse($flynkMeta['fetched_at'])->format('d.m.Y H:i') }}
                                 </span>
                             @endif
-                            @if(!empty($flynkMeta['dev_url']))
-                                <a href="{{ $flynkMeta['dev_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/[0.04] text-gray-700 text-xs font-medium hover:bg-black/[0.08]">
-                                    @svg('heroicon-o-beaker', 'w-3.5 h-3.5') Dev / Staging
-                                </a>
-                            @endif
                         </div>
-                    @endif
 
-                    <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
-                        @foreach([
-                            'name' => 'Name', 'client_name' => 'Kunde',
-                            'agency' => 'Agentur', 'status' => 'Status',
-                            'flynk_tier' => 'Tier', 'maintenance_interval' => 'Wartung',
-                            'primary_contact' => 'Kontakt', 'timezone' => 'Zeitzone',
-                            'forge_server' => 'Forge-Server',
-                        ] as $key => $label)
-                            @if(!empty($flynkMeta[$key]))
-                                <div class="flex justify-between gap-2 border-b border-gray-100 py-1">
-                                    <span class="text-gray-500">{{ $label }}</span>
-                                    <span class="font-medium text-gray-800 truncate">{{ $flynkMeta[$key] }}</span>
-                                </div>
-                            @endif
-                        @endforeach
-                    </div>
-
-                    {{-- Context-Completeness --}}
-                    @if(isset($flynkMeta['context_completeness']) && $flynkMeta['context_completeness'] !== null)
-                        @php $pct = (int) round((float) $flynkMeta['context_completeness'] * (($flynkMeta['context_completeness'] <= 1) ? 100 : 1)); @endphp
-                        <div class="mt-3">
-                            <div class="flex items-center justify-between text-[10px] text-gray-500 mb-1">
-                                <span>Context-Completeness</span>
-                                <span style="font-family: 'JetBrains Mono', monospace;">{{ $pct }}%</span>
-                            </div>
-                            <div class="h-1.5 rounded-full bg-black/[0.06] overflow-hidden">
-                                <div class="h-full rounded-full bg-[rgb(var(--ui-primary-rgb))]" style="width: {{ max(0, min(100, $pct)) }}%;"></div>
-                            </div>
-                        </div>
-                    @endif
-                    @if(!empty($flynkMeta['production_url']) || !empty($flynkMeta['github_repo']))
-                        <div class="flex flex-wrap gap-3 mt-3 text-xs">
+                        {{-- Link-Chips --}}
+                        <div class="flex flex-wrap gap-2 mb-4">
                             @if(!empty($flynkMeta['production_url']))
-                                <a href="{{ $flynkMeta['production_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[rgb(var(--ui-primary-rgb))] hover:underline">
+                                <a href="{{ $flynkMeta['production_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgb(var(--ui-primary-rgb))]/10 text-[rgb(var(--ui-primary-rgb))] text-xs font-medium hover:bg-[rgb(var(--ui-primary-rgb))]/15">
                                     @svg('heroicon-o-globe-alt', 'w-3.5 h-3.5') Website
                                 </a>
                             @endif
+                            @if(!empty($flynkMeta['dev_url']))
+                                <a href="{{ $flynkMeta['dev_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/[0.04] text-gray-700 text-xs font-medium hover:bg-black/[0.08]">
+                                    @svg('heroicon-o-beaker', 'w-3.5 h-3.5') Dev / Staging
+                                </a>
+                            @endif
                             @if(!empty($flynkMeta['github_repo']))
-                                <a href="{{ $flynkMeta['github_repo'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[rgb(var(--ui-primary-rgb))] hover:underline">
+                                <a href="{{ $flynkMeta['github_repo'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/[0.04] text-gray-700 text-xs font-medium hover:bg-black/[0.08]">
                                     @svg('heroicon-o-code-bracket', 'w-3.5 h-3.5') Repo
                                 </a>
                             @endif
                         </div>
-                    @endif
-                    @if(!empty($flynkMeta['stack']) && is_array($flynkMeta['stack']))
-                        <div class="flex flex-wrap gap-1.5 mt-3">
-                            @foreach($flynkMeta['stack'] as $tech)
-                                <span class="px-2 py-0.5 rounded-full bg-black/[0.04] text-[10px] text-gray-600">{{ $tech }}</span>
+
+                        <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                            @foreach([
+                                'client_name' => 'Kunde', 'agency' => 'Agentur',
+                                'status' => 'Status', 'flynk_tier' => 'Tier',
+                                'maintenance_interval' => 'Wartung', 'primary_contact' => 'Kontakt',
+                                'timezone' => 'Zeitzone', 'forge_server' => 'Forge-Server',
+                            ] as $key => $label)
+                                @if(!empty($flynkMeta[$key]))
+                                    <div class="flex justify-between gap-2 border-b border-gray-100 py-1">
+                                        <span class="text-gray-500">{{ $label }}</span>
+                                        <span class="font-medium text-gray-800 truncate">{{ $flynkMeta[$key] }}</span>
+                                    </div>
+                                @endif
                             @endforeach
                         </div>
-                    @endif
 
-                    @if(!empty($flynkMeta['notes']))
-                        <div class="mt-3 pt-3 border-t border-gray-100" x-data="{ open: false }">
-                            <button type="button" @click="open = !open" class="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600">
-                                @svg('heroicon-o-document-text', 'w-3.5 h-3.5')
-                                Notizen
-                                <span class="transition-transform" :class="open ? 'rotate-90' : ''">@svg('heroicon-o-chevron-right', 'w-3 h-3')</span>
-                            </button>
-                            <p x-show="open" x-collapse x-cloak class="mt-2 text-[11px] text-gray-600 whitespace-pre-line leading-relaxed">{{ $flynkMeta['notes'] }}</p>
+                        @if(!empty($flynkMeta['stack']) && is_array($flynkMeta['stack']))
+                            <div class="flex flex-wrap gap-1.5 mt-3">
+                                @foreach($flynkMeta['stack'] as $tech)
+                                    <span class="px-2 py-0.5 rounded-full bg-black/[0.04] text-[10px] text-gray-600">{{ $tech }}</span>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if(!empty($flynkMeta['notes']))
+                            <div class="mt-3 pt-3 border-t border-gray-100" x-data="{ open: false }">
+                                <button type="button" @click="open = !open" class="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600">
+                                    @svg('heroicon-o-document-text', 'w-3.5 h-3.5')
+                                    Notizen
+                                    <span class="transition-transform" :class="open ? 'rotate-90' : ''">@svg('heroicon-o-chevron-right', 'w-3 h-3')</span>
+                                </button>
+                                <p x-show="open" x-collapse x-cloak class="mt-2 text-[11px] text-gray-600 whitespace-pre-line leading-relaxed">{{ $flynkMeta['notes'] }}</p>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                {{-- Pushes (Timeline) --}}
+                <div class="{{ !empty($flynkMeta) ? 'lg:col-span-2' : 'lg:col-span-5' }} rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
+                    <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-4" style="font-family: 'JetBrains Mono', monospace;">Pushes</h2>
+                    @forelse($this->pushes as $push)
+                        @php
+                            $pIcon = $push->status->value === 'processed' ? 'heroicon-o-check'
+                                : ($push->status->value === 'failed' ? 'heroicon-o-x-mark' : 'heroicon-o-paper-airplane');
+                        @endphp
+                        <div class="flex gap-3">
+                            <div class="flex flex-col items-center">
+                                <span class="w-6 h-6 rounded-full bg-black/[0.04] flex items-center justify-center">
+                                    @svg($pIcon, 'w-3.5 h-3.5 text-[rgb(var(--ui-' . $push->status->color() . '-rgb))]')
+                                </span>
+                                @unless($loop->last)<span class="w-px flex-1 bg-gray-200 mt-1"></span>@endunless
+                            </div>
+                            <div class="flex-1 min-w-0 pb-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-semibold text-gray-800">{{ $push->status->label() }}</span>
+                                    <span class="text-[10px] text-gray-400 truncate" style="font-family: 'JetBrains Mono', monospace;">{{ \Illuminate\Support\Str::limit($push->uuid, 12) }}</span>
+                                    <span class="ml-auto text-[10px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">{{ $push->created_at->format('d.m. H:i') }}</span>
+                                </div>
+                                @php $results = $push->results(); @endphp
+                                @if(!empty($results))
+                                    <div class="mt-1 space-y-1">
+                                        @foreach($results as $r)
+                                            <a href="{{ $r['url'] ?? '#' }}" @if(!empty($r['url'])) target="_blank" rel="noopener" @endif class="flex items-center gap-1.5 text-[11px] text-gray-600 hover:text-[rgb(var(--ui-primary-rgb))]">
+                                                @svg('heroicon-o-document-text', 'w-3 h-3 text-gray-400 flex-shrink-0')
+                                                <span class="truncate">{{ $r['title'] ?? ($r['type'] ?? 'Ergebnis') }}</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @if(in_array($push->status->value, ['sent','accepted','processing']))
+                                    <button wire:click="pullFeedback({{ $push->id }})" class="mt-1 text-[10px] font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline">
+                                        Feedback abrufen
+                                    </button>
+                                @endif
+                            </div>
                         </div>
-                    @endif
+                    @empty
+                        <p class="text-xs text-gray-400">Noch keine Pushes.</p>
+                    @endforelse
                 </div>
-            @endif
+            </div>
 
-            {{-- Push-Vorschau (Envelope, den wir an FLYNK senden) --}}
-            <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5" x-data="{ open: false }">
+            {{-- ═══ Push-Vorschau ═══ --}}
+            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5" x-data="{ open: false }">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)]" style="font-family: 'JetBrains Mono', monospace;">Push-Vorschau</h2>
                     <button type="button" @click="open = !open" class="text-[10px] font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline">
@@ -265,43 +326,8 @@
                 </div>
             </div>
 
-            {{-- Pushes (Vorgänge + FLYNK-Feedback) --}}
-            <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">
-                <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-4" style="font-family: 'JetBrains Mono', monospace;">Pushes</h2>
-                @forelse($this->pushes as $push)
-                    <div class="border-b border-gray-100 last:border-0 py-2.5">
-                        <div class="flex items-center gap-2">
-                            <x-ui-badge :color="$push->status->color()" size="xs">{{ $push->status->label() }}</x-ui-badge>
-                            <span class="text-[11px] text-gray-500 truncate" style="font-family: 'JetBrains Mono', monospace;">{{ \Illuminate\Support\Str::limit($push->uuid, 18) }}</span>
-                            <span class="text-[10px] text-gray-400 ml-auto" style="font-family: 'JetBrains Mono', monospace;">{{ $push->created_at->format('d.m. H:i') }}</span>
-                            @if(in_array($push->status->value, ['sent','accepted','processing']))
-                                <button wire:click="pullFeedback({{ $push->id }})" class="text-[10px] font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline flex-shrink-0">
-                                    Feedback
-                                </button>
-                            @endif
-                        </div>
-                        @php $results = $push->results(); @endphp
-                        @if(!empty($results))
-                            <div class="mt-1.5 ml-1 space-y-1">
-                                @foreach($results as $r)
-                                    <div class="flex items-center gap-1.5 text-[11px] text-gray-600">
-                                        @svg('heroicon-o-document-text', 'w-3 h-3 text-gray-400 flex-shrink-0')
-                                        <span class="truncate">{{ $r['title'] ?? ($r['type'] ?? 'Ergebnis') }}</span>
-                                        @if(!empty($r['url']))
-                                            <a href="{{ $r['url'] }}" target="_blank" rel="noopener" class="text-[rgb(var(--ui-primary-rgb))] hover:underline">@svg('heroicon-o-arrow-top-right-on-square', 'w-3 h-3')</a>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-                @empty
-                    <p class="text-xs text-gray-400">Noch keine Pushes.</p>
-                @endforelse
-            </div>
-
-            {{-- Einstellungen --}}
-            <div class="rounded-xl border border-black/5 bg-white/60 backdrop-blur-sm p-5">
+            {{-- ═══ Einstellungen ═══ --}}
+            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
                 <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-4" style="font-family: 'JetBrains Mono', monospace;">Einstellungen</h2>
                 <div class="space-y-4">
                     <x-ui-input-text wire:model="form.name" label="Name" required />
@@ -323,8 +349,8 @@
                 @endif
             </div>
 
-            {{-- Danger zone --}}
-            <div class="rounded-xl border border-[rgb(var(--ui-danger-rgb))]/20 bg-[rgb(var(--ui-danger-rgb))]/5 p-5">
+            {{-- ═══ Danger zone ═══ --}}
+            <div class="rounded-2xl border border-[rgb(var(--ui-danger-rgb))]/20 bg-[rgb(var(--ui-danger-rgb))]/5 p-5">
                 <h3 class="text-sm font-semibold text-[rgb(var(--ui-danger-rgb))] mb-2">Gefahrenzone</h3>
                 <p class="text-xs text-[color:var(--ui-secondary)] mb-4">Löscht den Container lokal. Ein verbundenes FLYNK-Project bleibt bestehen — melde es vorher ab, wenn es entfernt werden soll.</p>
                 <x-ui-button variant="danger" size="sm" wire:click="delete" wire:confirm="Container wirklich löschen?">

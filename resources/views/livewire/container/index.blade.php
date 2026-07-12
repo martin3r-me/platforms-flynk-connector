@@ -78,46 +78,63 @@
             @else
                 <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach($this->containers as $container)
+                        @php
+                            $m = $container->metadata['flynk'] ?? [];
+                            $nodes = implode(', ', $this->entityNamesByContainer[$container->id] ?? []);
+                            $cc = $m['context_completeness'] ?? null;
+                            $ccPct = $cc !== null ? (int) round((float) $cc * (($cc <= 1) ? 100 : 1)) : null;
+                            $openTasks = $m['open_tasks'] ?? null;
+                        @endphp
                         <a href="{{ route('flynk-connector.containers.show', $container) }}"
-                           class="group block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-l-[4px] border-l-[rgb(var(--ui-{{ $container->status->color() }}-rgb))]">
+                           class="group relative block overflow-hidden rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                            <span class="absolute left-0 top-0 h-full w-1 bg-[rgb(var(--ui-{{ $container->status->color() }}-rgb))]"></span>
 
-                            <div class="flex items-start justify-between gap-3 mb-2">
-                                <h3 class="font-bold text-sm text-gray-900 truncate group-hover:text-gray-700 transition-colors">{{ $container->name }}</h3>
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <h3 class="font-bold text-[15px] text-gray-900 truncate group-hover:text-gray-700 transition-colors">{{ $container->name }}</h3>
+                                    <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">
+                                        @svg('heroicon-o-link', 'w-3 h-3 flex-shrink-0')
+                                        <span class="truncate">{{ $container->external_id ? \Illuminate\Support\Str::limit($container->external_id, 18) : 'nicht verbunden' }}</span>
+                                    </div>
+                                </div>
                                 <x-ui-badge :color="$container->status->color()" size="xs">{{ $container->status->label() }}</x-ui-badge>
                             </div>
 
-                            @if($container->description)
-                                <p class="text-xs text-gray-500 line-clamp-2 mb-3">{{ $container->description }}</p>
+                            <div class="flex items-center gap-1.5 mt-3 text-xs text-gray-600">
+                                @svg('heroicon-o-building-office', 'w-4 h-4 flex-shrink-0 text-gray-400')
+                                <span class="truncate">{{ $nodes ?: 'Kein Knoten' }}</span>
+                            </div>
+
+                            @if($openTasks !== null || !empty($m['dev_url']))
+                                <div class="flex flex-wrap items-center gap-2 mt-3">
+                                    @if($openTasks !== null)
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium {{ $openTasks > 0 ? 'bg-[rgb(var(--ui-primary-rgb))]/10 text-[rgb(var(--ui-primary-rgb))]' : 'bg-black/[0.04] text-gray-500' }}">
+                                            @svg('heroicon-o-clipboard-document-check', 'w-3.5 h-3.5')
+                                            {{ $openTasks }}@if(($m['total_tasks'] ?? null) !== null)/{{ $m['total_tasks'] }}@endif offene Aufgaben
+                                        </span>
+                                    @endif
+                                    @if(!empty($m['dev_url']))
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/[0.04] text-gray-700 text-xs font-medium">
+                                            @svg('heroicon-o-beaker', 'w-3.5 h-3.5') Dev / Staging
+                                        </span>
+                                    @endif
+                                </div>
                             @endif
 
-                            <div class="space-y-1.5 text-xs text-gray-500 pt-3 border-t border-gray-100">
-                                <div class="flex items-center gap-1.5">
-                                    @svg('heroicon-o-building-office', 'w-3.5 h-3.5 flex-shrink-0 text-gray-400')
-                                    <span class="truncate">{{ implode(', ', $this->entityNamesByContainer[$container->id] ?? []) ?: 'Kein Knoten' }}</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    @svg('heroicon-o-link', 'w-3.5 h-3.5 flex-shrink-0 text-gray-400')
-                                    <span class="truncate" style="font-family: 'JetBrains Mono', monospace;">
-                                        {{ $container->external_id ? \Illuminate\Support\Str::limit($container->external_id, 20) : 'nicht verbunden' }}
-                                    </span>
-                                </div>
-                                @php $m = $container->metadata['flynk'] ?? []; @endphp
-                                @if(($m['open_tasks'] ?? null) !== null)
-                                    <div class="flex items-center gap-1.5">
-                                        @svg('heroicon-o-clipboard-document-check', 'w-3.5 h-3.5 flex-shrink-0 text-gray-400')
-                                        <span>{{ $m['open_tasks'] }}@if(($m['total_tasks'] ?? null) !== null)/{{ $m['total_tasks'] }}@endif offene Aufgaben</span>
+                            <div class="mt-4 pt-3 border-t border-gray-100">
+                                @if($ccPct !== null)
+                                    <div class="flex items-center justify-between text-[10px] text-gray-400 mb-1">
+                                        <span class="uppercase tracking-wider" style="font-family: 'JetBrains Mono', monospace;">Context</span>
+                                        <span style="font-family: 'JetBrains Mono', monospace;">{{ $ccPct }}%</span>
                                     </div>
-                                @endif
-                                @if(!empty($m['dev_url']))
-                                    <div class="flex items-center gap-1.5">
-                                        @svg('heroicon-o-beaker', 'w-3.5 h-3.5 flex-shrink-0 text-gray-400')
-                                        <span class="truncate">{{ \Illuminate\Support\Str::of($m['dev_url'])->replace(['https://', 'http://'], '') }}</span>
+                                    <div class="h-1.5 rounded-full bg-black/[0.06] overflow-hidden">
+                                        <div class="h-full rounded-full bg-[rgb(var(--ui-primary-rgb))]" style="width: {{ max(2, min(100, $ccPct)) }}%;"></div>
                                     </div>
                                 @endif
                                 @if($container->last_synced_at)
-                                    <div class="flex items-center gap-1.5">
-                                        @svg('heroicon-o-clock', 'w-3.5 h-3.5 flex-shrink-0 text-gray-400')
-                                        <span style="font-family: 'JetBrains Mono', monospace;">{{ $container->last_synced_at->format('d.m.Y H:i') }}</span>
+                                    <div class="flex items-center gap-1.5 mt-2 text-[11px] text-gray-400">
+                                        @svg('heroicon-o-clock', 'w-3 h-3 flex-shrink-0')
+                                        <span style="font-family: 'JetBrains Mono', monospace;">Sync {{ $container->last_synced_at->diffForHumans() }}</span>
                                     </div>
                                 @endif
                             </div>
