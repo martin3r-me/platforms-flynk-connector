@@ -126,9 +126,9 @@
                 </div>
 
                 {{-- Stat strip --}}
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+                <div class="grid grid-cols-2 gap-3 mt-5">
                     <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Offene Aufgaben</div>
+                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Offene Aufgaben</div>
                         <div class="text-2xl font-bold text-[rgb(var(--ui-primary-rgb))]" style="font-family: 'JetBrains Mono', monospace;">{{ $flynkMeta['open_tasks'] ?? '—' }}</div>
                     </div>
                     <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3 flex items-center gap-3">
@@ -139,16 +139,16 @@
                                     style="transition: stroke-dashoffset .6s ease;" />
                         </svg>
                         <div>
-                            <div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-0.5" style="font-family: 'JetBrains Mono', monospace;">Context</div>
+                            <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-0.5" style="font-family: 'JetBrains Mono', monospace;">Context</div>
                             <div class="text-lg font-bold" style="font-family: 'JetBrains Mono', monospace;">{{ $pct !== null ? $pct.'%' : '—' }}</div>
                         </div>
                     </div>
                     <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Pushes</div>
+                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Pushes</div>
                         <div class="text-2xl font-bold" style="font-family: 'JetBrains Mono', monospace;">{{ $pushCount }}</div>
                     </div>
                     <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Letzter Sync</div>
+                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Letzter Sync</div>
                         <div class="text-sm font-semibold text-gray-700 mt-1.5" style="font-family: 'JetBrains Mono', monospace;">{{ $container->last_synced_at?->diffForHumans() ?? '—' }}</div>
                     </div>
                 </div>
@@ -183,7 +183,7 @@
                             @svg('heroicon-o-plus', 'w-4 h-4')
                             In FLYNK anlegen
                         </x-ui-button>
-                        <div class="flex items-end gap-2 flex-1 min-w-[240px]">
+                        <div class="flex items-end gap-2 flex-1" style="min-width: 15rem;">
                             <div class="flex-1">
                                 <x-ui-input-text wire:model="relinkExternalId" label="Bestehendes Project verknüpfen (UUID)" placeholder="FLYNK-Project-UUID" size="sm" />
                             </div>
@@ -197,11 +197,11 @@
             </div>
 
             {{-- ═══ FLYNK-Projekt + Pushes ═══ --}}
-            <div class="grid lg:grid-cols-5 gap-5">
+            <div class="grid gap-5 @if(!empty($flynkMeta)) md:grid-cols-2 @endif">
 
                 {{-- FLYNK-Projekt --}}
                 @if(!empty($flynkMeta))
-                    <div class="lg:col-span-3 rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
+                    <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
                         <div class="flex items-center justify-between mb-4">
                             <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)]" style="font-family: 'JetBrains Mono', monospace;">FLYNK-Projekt</h2>
                             @if(!empty($flynkMeta['fetched_at']))
@@ -214,7 +214,7 @@
                         {{-- Link-Chips --}}
                         <div class="flex flex-wrap gap-2 mb-4">
                             @if(!empty($flynkMeta['production_url']))
-                                <a href="{{ $flynkMeta['production_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgb(var(--ui-primary-rgb))]/10 text-[rgb(var(--ui-primary-rgb))] text-xs font-medium hover:bg-[rgb(var(--ui-primary-rgb))]/15">
+                                <a href="{{ $flynkMeta['production_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgb(var(--ui-primary-rgb))]/10 text-[rgb(var(--ui-primary-rgb))] text-xs font-medium hover:opacity-80">
                                     @svg('heroicon-o-globe-alt', 'w-3.5 h-3.5') Website
                                 </a>
                             @endif
@@ -268,7 +268,7 @@
                 @endif
 
                 {{-- Pushes (Timeline) --}}
-                <div class="{{ !empty($flynkMeta) ? 'lg:col-span-2' : 'lg:col-span-5' }} rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
+                <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
                     <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-4" style="font-family: 'JetBrains Mono', monospace;">Pushes</h2>
                     @forelse($this->pushes as $push)
                         @php
