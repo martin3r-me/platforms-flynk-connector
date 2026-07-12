@@ -196,6 +196,8 @@ class FlynkContainerService
 
         $metadata = $container->metadata ?? [];
         $metadata['flynk'] = $meta;
+        // Roh-Response mitspeichern: kein FLYNK-Feld geht verloren, echte Feldnamen bleiben inspizierbar.
+        $metadata['flynk_raw'] = $project;
 
         $container->update([
             'metadata' => $metadata,
@@ -217,6 +219,24 @@ class FlynkContainerService
             $stack = is_array($decoded) ? $decoded : $stack;
         }
 
+        // Erstes vorhandenes Feld aus einer Kandidatenliste (FLYNK-Feldnamen variieren).
+        $pick = function (array $keys) use ($project) {
+            foreach ($keys as $k) {
+                if (array_key_exists($k, $project) && $project[$k] !== null && $project[$k] !== '') {
+                    return $project[$k];
+                }
+            }
+            return null;
+        };
+
+        // Aufgaben — scalar oder verschachtelt unter tasks{}
+        $openTasks  = $pick(['open_tasks_count', 'open_tasks', 'tasks_open', 'tasks_open_count', 'open_task_count']);
+        $totalTasks = $pick(['tasks_count', 'total_tasks', 'tasks_total', 'task_count']);
+        if (isset($project['tasks']) && is_array($project['tasks'])) {
+            $openTasks  = $openTasks  ?? ($project['tasks']['open'] ?? $project['tasks']['open_count'] ?? null);
+            $totalTasks = $totalTasks ?? ($project['tasks']['total'] ?? $project['tasks']['count'] ?? null);
+        }
+
         return [
             // Stammdaten
             'name'                 => $project['name'] ?? null,
@@ -230,8 +250,13 @@ class FlynkContainerService
             'context_completeness' => $project['context_completeness'] ?? null,
             'timezone'             => $project['timezone'] ?? null,
 
+            // Betrieb / Aufgaben
+            'open_tasks'  => $openTasks,
+            'total_tasks' => $totalTasks,
+
             // Technik / Deployment
             'production_url'  => $project['production_url'] ?? ($project['url'] ?? null),
+            'dev_url'         => $pick(['staging_url', 'dev_url', 'development_url', 'preview_url', 'forge_url']),
             'github_repo'     => $project['github_repo'] ?? null,
             'local_directory' => $project['local_directory'] ?? null,
             'forge_server'    => $project['forge_server'] ?? null,

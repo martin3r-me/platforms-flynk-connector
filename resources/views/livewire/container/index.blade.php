@@ -101,6 +101,19 @@
                                         {{ $container->external_id ? \Illuminate\Support\Str::limit($container->external_id, 20) : 'nicht verbunden' }}
                                     </span>
                                 </div>
+                                @php $m = $container->metadata['flynk'] ?? []; @endphp
+                                @if(($m['open_tasks'] ?? null) !== null)
+                                    <div class="flex items-center gap-1.5">
+                                        @svg('heroicon-o-clipboard-document-check', 'w-3.5 h-3.5 flex-shrink-0 text-gray-400')
+                                        <span>{{ $m['open_tasks'] }}@if(($m['total_tasks'] ?? null) !== null)/{{ $m['total_tasks'] }}@endif offene Aufgaben</span>
+                                    </div>
+                                @endif
+                                @if(!empty($m['dev_url']))
+                                    <div class="flex items-center gap-1.5">
+                                        @svg('heroicon-o-beaker', 'w-3.5 h-3.5 flex-shrink-0 text-gray-400')
+                                        <span class="truncate">{{ \Illuminate\Support\Str::of($m['dev_url'])->replace(['https://', 'http://'], '') }}</span>
+                                    </div>
+                                @endif
                                 @if($container->last_synced_at)
                                     <div class="flex items-center gap-1.5">
                                         @svg('heroicon-o-clock', 'w-3.5 h-3.5 flex-shrink-0 text-gray-400')

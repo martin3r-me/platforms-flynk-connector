@@ -168,6 +168,24 @@
                             </span>
                         @endif
                     </div>
+
+                    {{-- Highlight: offene Aufgaben + Dev-/Staging-URL --}}
+                    @if(($flynkMeta['open_tasks'] ?? null) !== null || !empty($flynkMeta['dev_url']))
+                        <div class="flex flex-wrap items-center gap-2 mb-3">
+                            @if(($flynkMeta['open_tasks'] ?? null) !== null)
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[rgb(var(--ui-primary-rgb))]/10 text-[rgb(var(--ui-primary-rgb))] text-xs font-medium">
+                                    @svg('heroicon-o-clipboard-document-check', 'w-3.5 h-3.5')
+                                    {{ $flynkMeta['open_tasks'] }}@if(($flynkMeta['total_tasks'] ?? null) !== null)/{{ $flynkMeta['total_tasks'] }}@endif offene Aufgaben
+                                </span>
+                            @endif
+                            @if(!empty($flynkMeta['dev_url']))
+                                <a href="{{ $flynkMeta['dev_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/[0.04] text-gray-700 text-xs font-medium hover:bg-black/[0.08]">
+                                    @svg('heroicon-o-beaker', 'w-3.5 h-3.5') Dev / Staging
+                                </a>
+                            @endif
+                        </div>
+                    @endif
+
                     <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
                         @foreach([
                             'name' => 'Name', 'client_name' => 'Kunde',

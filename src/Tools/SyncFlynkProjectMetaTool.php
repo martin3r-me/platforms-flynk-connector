@@ -44,11 +44,13 @@ class SyncFlynkProjectMetaTool implements ToolContract, ToolMetadataContract
             }
 
             $meta = app(FlynkContainerService::class)->syncMeta($container);
+            $container->refresh();
 
             return ToolResult::success([
                 'container_id' => $container->id,
                 'external_id'  => $container->external_id,
                 'flynk_meta'   => $meta,
+                'flynk_raw'    => $container->metadata['flynk_raw'] ?? null,
                 'message'      => 'FLYNK-Meta aktualisiert.',
             ]);
         } catch (\Throwable $e) {
