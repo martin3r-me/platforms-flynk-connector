@@ -125,8 +125,8 @@
                     <x-ui-badge :color="$container->status->color()" size="sm">{{ $container->status->label() }}</x-ui-badge>
                 </div>
 
-                {{-- Stat strip --}}
-                <div class="grid grid-cols-2 gap-3 mt-5">
+                {{-- Stat strip (graceful: 2×2 Basis, 4-across ab md wenn CSS-Klasse vorhanden) --}}
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
                     <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
                         <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Offene Aufgaben</div>
                         <div class="text-2xl font-bold text-[rgb(var(--ui-primary-rgb))]" style="font-family: 'JetBrains Mono', monospace;">{{ $flynkMeta['open_tasks'] ?? '—' }}</div>
