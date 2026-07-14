@@ -105,13 +105,21 @@
                                 <span class="truncate">{{ $nodes ?: 'Kein Knoten' }}</span>
                             </div>
 
-                            @if($openTasks !== null || !empty($m['dev_url']))
+                            @php
+                                $wh = $m['website_health'] ?? null;
+                                $whMap = ['healthy' => ['success', 'Gesund'], 'warning' => ['warning', 'Warnung'], 'critical' => ['danger', 'Kritisch']];
+                                [$whColor, $whLabel] = $whMap[$wh] ?? [null, null];
+                            @endphp
+                            @if($openTasks !== null || !empty($m['dev_url']) || $whColor)
                                 <div class="flex flex-wrap items-center gap-2 mt-3">
                                     @if($openTasks !== null)
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium {{ $openTasks > 0 ? 'bg-[rgb(var(--ui-primary-rgb))]/10 text-[rgb(var(--ui-primary-rgb))]' : 'bg-black/[0.04] text-gray-500' }}">
                                             @svg('heroicon-o-clipboard-document-check', 'w-3.5 h-3.5')
                                             {{ $openTasks }}@if(($m['total_tasks'] ?? null) !== null)/{{ $m['total_tasks'] }}@endif offene Aufgaben
                                         </span>
+                                    @endif
+                                    @if($whColor)
+                                        <x-ui-badge :color="$whColor" size="xs">{{ $whLabel }}</x-ui-badge>
                                     @endif
                                     @if(!empty($m['dev_url']))
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/[0.04] text-gray-700 text-xs font-medium">

@@ -92,7 +92,6 @@
             $completeness = $flynkMeta['context_completeness'] ?? null;
             $pct = $completeness !== null ? (int) round((float) $completeness * (($completeness <= 1) ? 100 : 1)) : null;
             $circ = 113; $ringOffset = $pct !== null ? $circ - ($circ * $pct / 100) : $circ;
-            $pushCount = $container->pushes()->count();
         @endphp
 
         <div class="py-6 max-w-4xl space-y-5">
@@ -144,8 +143,15 @@
                         </div>
                     </div>
                     <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Pushes</div>
-                        <div class="text-2xl font-bold" style="font-family: 'JetBrains Mono', monospace;">{{ $pushCount }}</div>
+                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Website</div>
+                        @php
+                            $wh = $flynkMeta['website_health'] ?? null;
+                            $whMap = ['healthy' => ['success', 'Gesund'], 'warning' => ['warning', 'Warnung'], 'critical' => ['danger', 'Kritisch']];
+                            [$whColor, $whLabel] = $whMap[$wh] ?? ['muted', '—'];
+                        @endphp
+                        <div class="mt-1.5">
+                            <x-ui-badge :color="$whColor" size="sm">{{ $whLabel }}</x-ui-badge>
+                        </div>
                     </div>
                     <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
                         <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Letzter Sync</div>
@@ -244,7 +250,28 @@
                                     </div>
                                 @endif
                             @endforeach
+                            @if(!empty($flynkMeta['went_live_at']))
+                                <div class="flex justify-between gap-2 border-b border-gray-100 py-1">
+                                    <span class="text-gray-500">Go-Live</span>
+                                    <span class="font-medium text-gray-800">{{ \Illuminate\Support\Carbon::parse($flynkMeta['went_live_at'])->format('d.m.Y') }}</span>
+                                </div>
+                            @elseif(!empty($flynkMeta['go_live_at']))
+                                <div class="flex justify-between gap-2 border-b border-gray-100 py-1">
+                                    <span class="text-gray-500">Go-Live geplant</span>
+                                    <span class="font-medium text-gray-800">{{ \Illuminate\Support\Carbon::parse($flynkMeta['go_live_at'])->format('d.m.Y') }}</span>
+                                </div>
+                            @endif
                         </div>
+
+                        @if(!empty($flynkMeta['tasks_by_status']) && is_array($flynkMeta['tasks_by_status']))
+                            <div class="flex flex-wrap gap-1.5 mt-3">
+                                @foreach($flynkMeta['tasks_by_status'] as $st => $cnt)
+                                    @if($cnt > 0)
+                                        <span class="px-2 py-0.5 rounded-full bg-black/[0.04] text-[10px] text-gray-600">{{ $st }}: {{ $cnt }}</span>
+                                    @endif
+                                @endforeach
+                            </div>
+                        @endif
 
                         @if(!empty($flynkMeta['stack']) && is_array($flynkMeta['stack']))
                             <div class="flex flex-wrap gap-1.5 mt-3">

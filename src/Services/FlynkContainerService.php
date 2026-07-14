@@ -250,13 +250,18 @@ class FlynkContainerService
             'context_completeness' => $project['context_completeness'] ?? null,
             'timezone'             => $project['timezone'] ?? null,
 
-            // Betrieb / Aufgaben
-            'open_tasks'  => $openTasks,
-            'total_tasks' => $totalTasks,
+            // Betrieb / Aufgaben / Status
+            'open_tasks'      => $openTasks,
+            'total_tasks'     => $totalTasks,
+            'tasks_by_status' => $project['tasks_by_status'] ?? null,
+            'website_health'  => $project['website_health'] ?? null,
+            'went_live_at'    => $project['went_live_at'] ?? null,
+            'go_live_at'      => $project['go_live_at'] ?? null,
 
             // Technik / Deployment
             'production_url'  => $project['production_url'] ?? ($project['url'] ?? null),
-            'dev_url'         => $pick(['staging_url', 'dev_url', 'development_url', 'preview_url', 'forge_url']),
+            'dev_url'         => $pick(['dev_url', 'staging_url', 'development_url', 'preview_url', 'forge_url']),
+            'flynk_url'       => $project['flynk_url'] ?? null,
             'github_repo'     => $project['github_repo'] ?? null,
             'local_directory' => $project['local_directory'] ?? null,
             'forge_server'    => $project['forge_server'] ?? null,
