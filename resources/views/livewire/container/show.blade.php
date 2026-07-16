@@ -96,12 +96,6 @@
 
         <div class="py-6 max-w-4xl space-y-5">
 
-            {{-- ═══ DIAGNOSE-MARKER (temporär) — bestätigt, ob View-Änderungen greifen ═══ --}}
-            <div style="background:linear-gradient(90deg,#ff2d55,#ff8a00);color:#fff;padding:16px 20px;border-radius:14px;font-weight:800;font-size:17px;letter-spacing:.01em;box-shadow:0 8px 24px -8px rgba(255,45,85,.5);display:flex;align-items:center;gap:12px;">
-                <span style="font-size:22px;">🚨</span>
-                <span>NEUE CONNECTOR-VIEW IST AKTIV · Build 2026-07-14-A</span>
-            </div>
-
             {{-- ═══ Hero ═══ --}}
             <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-6">
                 <div class="flex items-start justify-between gap-4 flex-wrap">
