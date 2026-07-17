@@ -231,19 +231,24 @@ class FlynkContainerService
 
         $base = $flynkUrl ? rtrim($flynkUrl, '/') : null;
 
+        // FLYNK liefert type/status/priority mal als Skalar, mal als {label,value}-Objekt.
+        $val = fn ($v) => is_array($v) ? ($v['value'] ?? $v['label'] ?? null) : $v;
+        // assignee/creator ebenso: String oder Objekt mit name.
+        $name = fn ($v) => is_array($v) ? ($v['name'] ?? null) : $v;
+
         return collect($rows)
             ->filter(fn ($t) => is_array($t))
-            ->map(function (array $t) use ($base) {
+            ->map(function (array $t) use ($base, $val, $name) {
                 $id = $t['id'] ?? $t['uuid'] ?? null;
 
                 return [
                     'id'         => $id,
                     'title'      => $t['title'] ?? $t['name'] ?? '(ohne Titel)',
-                    'type'       => $t['type'] ?? null,
-                    'status'     => $t['status'] ?? null,
-                    'priority'   => $t['priority'] ?? null,
-                    'assignee'   => $t['assignee_name'] ?? ($t['assignee']['name'] ?? null),
-                    'creator'    => $t['creator_name'] ?? ($t['creator']['name'] ?? null),
+                    'type'       => $val($t['type'] ?? null),
+                    'status'     => $val($t['status'] ?? null),
+                    'priority'   => $val($t['priority'] ?? null),
+                    'assignee'   => $name($t['assignee_name'] ?? $t['assignee'] ?? null),
+                    'creator'    => $name($t['creator_name'] ?? $t['creator'] ?? null),
                     'created_at' => $t['created_at'] ?? null,
                     'url'        => $t['url'] ?? (($base && $id) ? $base.'/tasks/'.$id : null),
                 ];

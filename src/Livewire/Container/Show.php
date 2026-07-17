@@ -94,7 +94,17 @@ class Show extends Component
     {
         $order = ['in_progress' => 0, 'planned' => 1, 'new' => 2, 'review' => 3, 'suggested' => 4, 'on_hold' => 5, 'done' => 6, 'rejected' => 7];
 
+        // FLYNK liefert type/status/priority teils als {label,value}-Objekt, teils
+        // als Skalar — defensiv auf den skalaren value normalisieren.
+        $val = fn ($v) => is_array($v) ? ($v['value'] ?? $v['label'] ?? null) : $v;
+
         return collect($this->container->metadata['flynk_tasks'] ?? [])
+            ->map(function ($t) use ($val) {
+                $t['status']   = $val($t['status'] ?? null);
+                $t['type']     = $val($t['type'] ?? null);
+                $t['priority'] = $val($t['priority'] ?? null);
+                return $t;
+            })
             ->sortBy(fn ($t) => $order[$t['status'] ?? ''] ?? 9)
             ->values();
     }
