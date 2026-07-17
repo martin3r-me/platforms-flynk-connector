@@ -72,10 +72,17 @@ class FlynkConnectorServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 \Platform\FlynkConnector\Console\Commands\PushFlynkContexts::class,
+                \Platform\FlynkConnector\Console\Commands\PullFlynk::class,
                 \Platform\FlynkConnector\Console\Commands\PullFlynkFeedback::class,
                 \Platform\FlynkConnector\Console\Commands\PullFlynkQuestions::class,
             ]);
         }
+
+        // Scheduler: outbound push (nächtlich) + inbound pull (stündlich)
+        $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule) {
+            $schedule->command('flynk:push-contexts')->dailyAt('02:00')->withoutOverlapping();
+            $schedule->command('flynk:pull')->hourly()->withoutOverlapping();
+        });
 
         // Tools registrieren
         $this->registerTools();
