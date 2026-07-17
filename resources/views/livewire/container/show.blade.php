@@ -206,7 +206,8 @@
             <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)]" style="font-family: 'JetBrains Mono', monospace;">
-                        Rückfragen@if($this->openQuestions->isNotEmpty()) <span class="text-[rgb(var(--ui-warning-rgb))]">({{ $this->openQuestions->count() }})</span>@endif
+                        Rückfragen
+                        @if($this->openQuestions->isNotEmpty())<span class="text-[rgb(var(--ui-warning-rgb))]"> ({{ $this->openQuestions->count() }})</span>@endif
                     </h2>
                     <button wire:click="pullQuestions" wire:loading.attr="disabled" class="text-[10px] font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline inline-flex items-center gap-1">
                         @svg('heroicon-o-arrow-down-tray', 'w-3.5 h-3.5') abrufen
