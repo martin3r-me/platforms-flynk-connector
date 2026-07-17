@@ -202,6 +202,50 @@
                 </div>
             </div>
 
+            {{-- ═══ Rückfragen (inbound) ═══ --}}
+            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)]" style="font-family: 'JetBrains Mono', monospace;">
+                        Rückfragen@if($this->openQuestions->isNotEmpty()) <span class="text-[rgb(var(--ui-warning-rgb))]">({{ $this->openQuestions->count() }})</span>@endif
+                    </h2>
+                    <button wire:click="pullQuestions" wire:loading.attr="disabled" class="text-[10px] font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline inline-flex items-center gap-1">
+                        @svg('heroicon-o-arrow-down-tray', 'w-3.5 h-3.5') abrufen
+                    </button>
+                </div>
+
+                @forelse($this->openQuestions as $question)
+                    <div class="border-b border-gray-100 last:border-0 py-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <h3 class="text-sm font-medium text-gray-900">{{ $question->title }}</h3>
+                            @if($question->priority === 'high')
+                                <x-ui-badge color="danger" size="xs">Hoch</x-ui-badge>
+                            @endif
+                        </div>
+                        @if($question->description)
+                            <p class="text-xs text-gray-600 mt-1 whitespace-pre-line leading-relaxed">{{ \Illuminate\Support\Str::limit($question->description, 300) }}</p>
+                        @endif
+
+                        @if($answeringId === $question->id)
+                            <div class="mt-2 space-y-2">
+                                <x-ui-input-textarea wire:model="answerText" label="Antwort an FLYNK" rows="3" placeholder="Deine Antwort…" />
+                                <div class="flex justify-end gap-2">
+                                    <x-ui-button variant="secondary" size="sm" wire:click="cancelAnswer">Abbrechen</x-ui-button>
+                                    <x-ui-button variant="primary" size="sm" wire:click="submitAnswer">
+                                        @svg('heroicon-o-paper-airplane', 'w-4 h-4') Senden
+                                    </x-ui-button>
+                                </div>
+                            </div>
+                        @else
+                            <button wire:click="startAnswer({{ $question->id }})" class="mt-2 text-xs font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline inline-flex items-center gap-1">
+                                @svg('heroicon-o-chat-bubble-left-right', 'w-3.5 h-3.5') Antworten
+                            </button>
+                        @endif
+                    </div>
+                @empty
+                    <p class="text-xs text-gray-400">Keine offenen Rückfragen — wir sind hier bei nichts am Zug.</p>
+                @endforelse
+            </div>
+
             {{-- ═══ FLYNK-Projekt + Pushes ═══ --}}
             <div class="grid gap-5 @if(!empty($flynkMeta)) md:grid-cols-2 @endif">
 

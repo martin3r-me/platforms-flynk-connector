@@ -5,6 +5,7 @@ namespace Platform\FlynkConnector\Livewire;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Platform\FlynkConnector\Models\FlynkContainer;
+use Platform\FlynkConnector\Models\FlynkQuestion;
 
 class Sidebar extends Component
 {
@@ -17,8 +18,13 @@ class Sidebar extends Component
             ? FlynkContainer::where('team_id', $teamId)->orderBy('name')->get()
             : collect();
 
+        $openQuestions = $teamId
+            ? FlynkQuestion::where('team_id', $teamId)->open()->count()
+            : 0;
+
         return view('flynk-connector::livewire.sidebar', [
             'containers' => $containers,
+            'openQuestions' => $openQuestions,
         ]);
     }
 }

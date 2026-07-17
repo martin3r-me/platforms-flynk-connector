@@ -7,8 +7,10 @@ use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Platform\FlynkConnector\Enums\FlynkContainerStatus;
 use Platform\FlynkConnector\Models\FlynkContainer;
+use Platform\FlynkConnector\Models\FlynkQuestion;
 use Platform\FlynkConnector\Services\FlynkContainerService;
 use Platform\FlynkConnector\Services\FlynkPushService;
+use Platform\FlynkConnector\Services\FlynkQuestionService;
 use Platform\Integrations\Models\Integration;
 use Platform\Integrations\Models\IntegrationConnection;
 
@@ -24,6 +26,10 @@ class Show extends Component
 
     /** Für erneutes Verknüpfen (bei Entwurf/abgemeldet). */
     public string $relinkExternalId = '';
+
+    /** Rückfragen-Antwort (inline). */
+    public ?int $answeringId = null;
+    public string $answerText = '';
 
     public function mount(FlynkContainer $container): void
     {
@@ -74,6 +80,55 @@ class Show extends Component
     public function pushes()
     {
         return $this->container->pushes()->orderByDesc('created_at')->take(20)->get();
+    }
+
+    #[Computed]
+    public function openQuestions()
+    {
+        return $this->container->questions()->open()->orderByDesc('flynk_created_at')->get();
+    }
+
+    /** Rückfragen dieses Containers aus FLYNK ziehen. */
+    public function pullQuestions(FlynkQuestionService $service): void
+    {
+        try {
+            $r = $service->pull($this->container);
+            $this->dispatch('toast', message: "Rückfragen abgerufen: {$r['open']} offen.");
+        } catch (\Throwable $e) {
+            $this->dispatch('toast', message: 'Abruf fehlgeschlagen: '.$e->getMessage());
+        }
+        unset($this->openQuestions);
+    }
+
+    public function startAnswer(int $id): void
+    {
+        $this->answeringId = $id;
+        $this->answerText = '';
+    }
+
+    public function cancelAnswer(): void
+    {
+        $this->answeringId = null;
+        $this->answerText = '';
+    }
+
+    public function submitAnswer(FlynkQuestionService $service): void
+    {
+        $this->validate(['answerText' => ['required', 'string', 'min:2']]);
+
+        $question = $this->container->questions()->find($this->answeringId);
+        if (! $question) {
+            return;
+        }
+
+        try {
+            $service->answer($question, $this->answerText, Auth::id());
+            $this->dispatch('toast', message: 'Antwort an FLYNK gesendet.');
+            $this->cancelAnswer();
+        } catch (\Throwable $e) {
+            $this->dispatch('toast', message: 'Antwort fehlgeschlagen: '.$e->getMessage());
+        }
+        unset($this->openQuestions);
     }
 
     /** Manueller Kontext-Push (immer senden). */

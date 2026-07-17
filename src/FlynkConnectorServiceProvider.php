@@ -26,6 +26,8 @@ class FlynkConnectorServiceProvider extends ServiceProvider
         Relation::morphMap([
             'flynk_container'  => \Platform\FlynkConnector\Models\FlynkContainer::class,
             'flynk_sync_state' => \Platform\FlynkConnector\Models\FlynkSyncState::class,
+            'flynk_push'       => \Platform\FlynkConnector\Models\FlynkPush::class,
+            'flynk_question'   => \Platform\FlynkConnector\Models\FlynkQuestion::class,
         ]);
 
         // Config laden
@@ -71,6 +73,7 @@ class FlynkConnectorServiceProvider extends ServiceProvider
             $this->commands([
                 \Platform\FlynkConnector\Console\Commands\PushFlynkContexts::class,
                 \Platform\FlynkConnector\Console\Commands\PullFlynkFeedback::class,
+                \Platform\FlynkConnector\Console\Commands\PullFlynkQuestions::class,
             ]);
         }
 
@@ -105,6 +108,9 @@ class FlynkConnectorServiceProvider extends ServiceProvider
             $registry->register(new \Platform\FlynkConnector\Tools\UnregisterFlynkContainerTool());
             $registry->register(new \Platform\FlynkConnector\Tools\SyncFlynkProjectMetaTool());
             $registry->register(new \Platform\FlynkConnector\Tools\PushFlynkContextTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\ListFlynkQuestionsTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\AnswerFlynkQuestionTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\PullFlynkQuestionsTool());
         } catch (\Throwable $e) {
             \Log::warning('FlynkConnector: Tool-Registrierung fehlgeschlagen', ['error' => $e->getMessage()]);
         }
