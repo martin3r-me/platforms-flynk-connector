@@ -97,7 +97,8 @@
         <div class="py-6 max-w-4xl space-y-5">
 
             {{-- ═══ Hero ═══ --}}
-            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-6">
+            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-6"
+                 style="background-image: radial-gradient(620px 260px at 100% -25%, rgb(var(--ui-primary-rgb) / 0.10), transparent 70%);">
                 <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="min-w-0">
                         <div class="flex items-center gap-2 text-[11px] text-gray-400 mb-1 flex-wrap">
@@ -246,6 +247,114 @@
                     <p class="text-xs text-gray-400">Keine offenen Rückfragen — wir sind hier bei nichts am Zug.</p>
                 @endforelse
             </div>
+
+            {{-- ═══ Aufgaben ═══ --}}
+            @php
+                $taskMeta = [
+                    'in_progress' => ['#6366f1', 'In Arbeit'],
+                    'planned'     => ['#64748b', 'Geplant'],
+                    'new'         => ['#0ea5e9', 'Neu'],
+                    'review'      => ['#f59e0b', 'Review'],
+                    'suggested'   => ['#94a3b8', 'Vorschlag'],
+                    'on_hold'     => ['#6b7280', 'Pausiert'],
+                    'done'        => ['#10b981', 'Erledigt'],
+                    'rejected'    => ['#ef4444', 'Abgelehnt'],
+                ];
+                $typeIcons = [
+                    'change' => 'heroicon-o-pencil-square', 'feature_request' => 'heroicon-o-sparkles',
+                    'bug' => 'heroicon-o-bug-ant', 'question' => 'heroicon-o-question-mark-circle',
+                    'new_page' => 'heroicon-o-document-plus', 'blog_post' => 'heroicon-o-pencil',
+                    'page_edit' => 'heroicon-o-pencil-square', 'text_change' => 'heroicon-o-language',
+                    'image_update' => 'heroicon-o-photo', 'new_section' => 'heroicon-o-squares-plus',
+                    'social_post' => 'heroicon-o-megaphone', 'other' => 'heroicon-o-ellipsis-horizontal-circle',
+                ];
+                $bucketOf = fn ($s) => in_array($s, ['done', 'rejected']) ? 'erledigt' : ($s === 'review' ? 'review' : 'offen');
+                $buckets = $this->tasks->groupBy(fn ($t) => $bucketOf($t['status'] ?? ''));
+                $cOffen = ($buckets['offen'] ?? collect())->count();
+                $cReview = ($buckets['review'] ?? collect())->count();
+                $cDone = ($buckets['erledigt'] ?? collect())->count();
+                $cAll = $this->tasks->count();
+                $statusCounts = $this->tasks->groupBy(fn ($t) => $t['status'] ?? 'other')->map->count();
+            @endphp
+
+            @if($cAll > 0)
+                <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5" x-data="{ tab: '{{ $cOffen > 0 ? 'offen' : 'alle' }}' }">
+                    <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
+                        <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] inline-flex items-center gap-2" style="font-family: 'JetBrains Mono', monospace;">
+                            @svg('heroicon-o-clipboard-document-list', 'w-4 h-4')
+                            Aufgaben
+                            @if(!empty($flynkMeta['flynk_url']))
+                                <a href="{{ $flynkMeta['flynk_url'] }}" target="_blank" rel="noopener" class="text-[rgb(var(--ui-primary-rgb))] normal-case tracking-normal text-[10px] font-medium hover:underline">in FLYNK öffnen ↗</a>
+                            @endif
+                        </h2>
+                        <div class="inline-flex items-center gap-0.5 p-0.5 rounded-xl bg-black/[0.04] text-xs font-semibold">
+                            <button @click="tab='offen'" :class="tab==='offen' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg transition">Offen · {{ $cOffen }}</button>
+                            <button @click="tab='review'" :class="tab==='review' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg transition">Review · {{ $cReview }}</button>
+                            <button @click="tab='erledigt'" :class="tab==='erledigt' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg transition">Erledigt · {{ $cDone }}</button>
+                            <button @click="tab='alle'" :class="tab==='alle' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg transition">Alle · {{ $cAll }}</button>
+                        </div>
+                    </div>
+
+                    {{-- Status-Verteilung --}}
+                    <div class="flex items-center h-1.5 rounded-full overflow-hidden mb-4 bg-gray-100">
+                        @foreach($statusCounts as $st => $cnt)
+                            <div style="width: {{ $cAll ? round($cnt / $cAll * 100) : 0 }}%; background: {{ $taskMeta[$st][0] ?? '#cbd5e1' }};" title="{{ $st }}: {{ $cnt }}"></div>
+                        @endforeach
+                    </div>
+
+                    {{-- Task-Zeilen --}}
+                    <div>
+                        @foreach($this->tasks as $t)
+                            @php
+                                $st = $t['status'] ?? 'other';
+                                [$stColor, $stLabel] = $taskMeta[$st] ?? ['#94a3b8', $st];
+                                $bucket = $bucketOf($st);
+                            @endphp
+                            <div x-show="tab==='alle' || tab==='{{ $bucket }}'" class="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0 group">
+                                <span class="w-1 self-stretch rounded-full flex-shrink-0" style="background: {{ $stColor }};"></span>
+                                <span class="w-7 h-7 flex-shrink-0 rounded-lg bg-black/[0.04] flex items-center justify-center text-gray-500">
+                                    @svg($typeIcons[$t['type']] ?? 'heroicon-o-minus-circle', 'w-4 h-4')
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2">
+                                        @if(!empty($t['url']))
+                                            <a href="{{ $t['url'] }}" target="_blank" rel="noopener" class="text-sm font-medium text-gray-900 truncate hover:text-[rgb(var(--ui-primary-rgb))]">{{ $t['title'] }}</a>
+                                        @else
+                                            <p class="text-sm font-medium text-gray-900 truncate">{{ $t['title'] }}</p>
+                                        @endif
+                                        @if(($t['priority'] ?? null) === 'high')
+                                            <span class="flex-shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold" style="background: rgba(239,68,68,.12); color: #dc2626;">HOCH</span>
+                                        @endif
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5" style="font-family: 'JetBrains Mono', monospace;">
+                                        <span>{{ $t['type'] }}</span>
+                                        @if(!empty($t['assignee']))
+                                            <span class="inline-flex items-center gap-1">
+                                                <span class="text-gray-300">·</span>
+                                                <span class="w-4 h-4 rounded-full bg-[rgb(var(--ui-primary-rgb))] text-white text-[8px] font-bold flex items-center justify-center">{{ mb_substr($t['assignee'], 0, 1) }}</span>
+                                                {{ $t['assignee'] }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <span class="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold" style="background: {{ $stColor }}1f; color: {{ $stColor }};">{{ $stLabel }}</span>
+                                @if(!empty($t['created_at']))
+                                    <span class="flex-shrink-0 text-[10px] text-gray-400 w-11 text-right" style="font-family: 'JetBrains Mono', monospace;">{{ \Illuminate\Support\Carbon::parse($t['created_at'])->format('d.m.') }}</span>
+                                @endif
+                            </div>
+                        @endforeach
+                        <p x-show="(tab==='offen' && {{ $cOffen }} === 0) || (tab==='review' && {{ $cReview }} === 0) || (tab==='erledigt' && {{ $cDone }} === 0)" x-cloak class="text-xs text-gray-400 py-4 text-center">Keine Aufgaben in dieser Ansicht.</p>
+                    </div>
+                </div>
+            @else
+                <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
+                    <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] inline-flex items-center gap-2 mb-2" style="font-family: 'JetBrains Mono', monospace;">
+                        @svg('heroicon-o-clipboard-document-list', 'w-4 h-4')
+                        Aufgaben
+                    </h2>
+                    <p class="text-xs text-gray-400">Noch keine Aufgaben — sobald FLYNK Tasks anlegt, erscheinen sie hier (Abruf über „Meta aktualisieren").</p>
+                </div>
+            @endif
 
             {{-- ═══ FLYNK-Projekt + Pushes ═══ --}}
             <div class="grid gap-5 @if(!empty($flynkMeta)) md:grid-cols-2 @endif">

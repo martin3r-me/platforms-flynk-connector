@@ -88,6 +88,17 @@ class Show extends Component
         return $this->container->questions()->open()->orderByDesc('flynk_created_at')->get();
     }
 
+    /** Gecachte FLYNK-Task-Liste (aus syncMeta), sortiert nach Bearbeitungsstatus. */
+    #[Computed]
+    public function tasks()
+    {
+        $order = ['in_progress' => 0, 'planned' => 1, 'new' => 2, 'review' => 3, 'suggested' => 4, 'on_hold' => 5, 'done' => 6, 'rejected' => 7];
+
+        return collect($this->container->metadata['flynk_tasks'] ?? [])
+            ->sortBy(fn ($t) => $order[$t['status'] ?? ''] ?? 9)
+            ->values();
+    }
+
     /** Rückfragen dieses Containers aus FLYNK ziehen. */
     public function pullQuestions(FlynkQuestionService $service): void
     {
@@ -277,7 +288,7 @@ class Show extends Component
     protected function refreshState(): void
     {
         $this->container->refresh()->load(['connection', 'user']);
-        unset($this->events, $this->pushes);
+        unset($this->events, $this->pushes, $this->tasks);
         $this->loadForm();
     }
 

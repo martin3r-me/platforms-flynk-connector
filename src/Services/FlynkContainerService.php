@@ -198,6 +198,13 @@ class FlynkContainerService
         $metadata['flynk'] = $meta;
         // Roh-Response mitspeichern: kein FLYNK-Feld geht verloren, echte Feldnamen bleiben inspizierbar.
         $metadata['flynk_raw'] = $project;
+        // Task-Liste best-effort mitziehen (für die Aufgaben-Ansicht). Fehler hier
+        // dürfen den Meta-Sync nicht abbrechen.
+        try {
+            $metadata['flynk_tasks'] = $this->fetchTasks($connection, $container->external_id, $meta['flynk_url'] ?? null);
+        } catch (\Throwable $e) {
+            Log::warning('FlynkConnector: Task-Abruf fehlgeschlagen', ['container' => $container->id, 'error' => $e->getMessage()]);
+        }
 
         $container->update([
             'metadata' => $metadata,
@@ -208,6 +215,41 @@ class FlynkContainerService
         $this->logEvent($container, 'meta', 'Meta aktualisiert', 'FLYNK-Projekt-Metadaten abgerufen.', $meta);
 
         return $meta;
+    }
+
+    /**
+     * Task-Liste eines FLYNK-Projects: kuratiert auf die Felder, die die
+     * Aufgaben-Ansicht braucht. Wird in metadata['flynk_tasks'] gecached.
+     */
+    protected function fetchTasks(IntegrationConnection $connection, string $projectId, ?string $flynkUrl = null): array
+    {
+        $response = $this->api->listTasks($connection, ['project_id' => $projectId]);
+        $rows = $response['data'] ?? $response;
+        if (! is_array($rows)) {
+            return [];
+        }
+
+        $base = $flynkUrl ? rtrim($flynkUrl, '/') : null;
+
+        return collect($rows)
+            ->filter(fn ($t) => is_array($t))
+            ->map(function (array $t) use ($base) {
+                $id = $t['id'] ?? $t['uuid'] ?? null;
+
+                return [
+                    'id'         => $id,
+                    'title'      => $t['title'] ?? $t['name'] ?? '(ohne Titel)',
+                    'type'       => $t['type'] ?? null,
+                    'status'     => $t['status'] ?? null,
+                    'priority'   => $t['priority'] ?? null,
+                    'assignee'   => $t['assignee_name'] ?? ($t['assignee']['name'] ?? null),
+                    'creator'    => $t['creator_name'] ?? ($t['creator']['name'] ?? null),
+                    'created_at' => $t['created_at'] ?? null,
+                    'url'        => $t['url'] ?? (($base && $id) ? $base.'/tasks/'.$id : null),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     /** Kuratierte Meta-Auswahl aus dem FLYNK-Project-Datensatz. */
