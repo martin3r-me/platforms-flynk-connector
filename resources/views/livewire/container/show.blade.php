@@ -91,77 +91,104 @@
             $flynkMeta = $container->metadata['flynk'] ?? [];
             $completeness = $flynkMeta['context_completeness'] ?? null;
             $pct = $completeness !== null ? (int) round((float) $completeness * (($completeness <= 1) ? 100 : 1)) : null;
-            $circ = 113; $ringOffset = $pct !== null ? $circ - ($circ * $pct / 100) : $circ;
+            $circ = 126; $ringOffset = $pct !== null ? $circ - ($circ * $pct / 100) : $circ;
+            $ctxSub = $pct === null ? '—' : ($pct <= 0 ? 'noch leer' : ($pct >= 100 ? 'vollständig' : 'in Arbeit'));
+            $totalTasks = $flynkMeta['total_tasks'] ?? null;
+            $goLiveRaw = $flynkMeta['went_live_at'] ?? ($flynkMeta['go_live_at'] ?? null);
+            $goLive = $goLiveRaw ? \Illuminate\Support\Carbon::parse($goLiveRaw)->format('d.m.Y') : null;
+            $statusVal = $container->status->value;
+            [$stDot, $stBg] = $statusVal === 'active' ? ['#059669', 'rgba(16,185,129,.12)'] : ['#64748b', 'rgba(100,116,139,.12)'];
+            $devUrl = $flynkMeta['dev_url'] ?? null;
+            $repoUrl = $flynkMeta['github_repo'] ?? null;
         @endphp
 
         <div class="py-6 max-w-4xl space-y-5">
 
             {{-- ═══ Hero ═══ --}}
-            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-6"
-                 style="background-image: radial-gradient(620px 260px at 100% -25%, rgb(var(--ui-primary-rgb) / 0.10), transparent 70%);">
-                <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div class="relative overflow-hidden border border-black/5 bg-white/70 backdrop-blur-sm p-6"
+                 style="border-radius: 1.5rem;">
+                {{-- Deko-Glow --}}
+                <span class="absolute pointer-events-none" aria-hidden="true"
+                      style="top: -5rem; right: -5rem; width: 15rem; height: 15rem; border-radius: 9999px; background: radial-gradient(circle, rgb(var(--ui-primary-rgb) / 0.18), transparent 70%);"></span>
+
+                <div class="relative flex items-start justify-between gap-4 flex-wrap">
                     <div class="min-w-0">
-                        <div class="flex items-center gap-2 text-[11px] text-gray-400 mb-1 flex-wrap">
-                            <span style="font-family: 'JetBrains Mono', monospace;">FLYNK Container</span>
+                        <div class="flex items-center gap-2 text-[11px] text-gray-400 mb-2 flex-wrap" style="font-family: 'JetBrains Mono', monospace;">
                             @foreach($container->linkedEntities() as $entity)
-                                <span>&middot;</span>
                                 <span class="inline-flex items-center gap-1">@svg('heroicon-o-building-office', 'w-3 h-3') {{ $entity->name }}</span>
+                                <span class="text-gray-300">·</span>
                             @endforeach
-                        </div>
-                        <h1 class="text-xl font-bold tracking-tight text-[color:var(--ui-text)]">{{ $container->name }}</h1>
-                        <div class="flex items-center gap-3 mt-2 text-xs flex-wrap">
                             @if($container->external_id)
-                                <span class="inline-flex items-center gap-1 text-gray-400" style="font-family: 'JetBrains Mono', monospace;">
-                                    @svg('heroicon-o-link', 'w-3.5 h-3.5') {{ \Illuminate\Support\Str::limit($container->external_id, 22) }}
-                                </span>
+                                <span class="inline-flex items-center gap-1">@svg('heroicon-o-link', 'w-3 h-3') {{ \Illuminate\Support\Str::limit($container->external_id, 20) }}</span>
                             @endif
+                        </div>
+                        <h1 class="text-2xl font-bold tracking-tight text-[color:var(--ui-text)]">{{ $container->name }}</h1>
+                        <div class="flex items-center gap-3 mt-2 text-xs flex-wrap">
                             @if($container->external_url)
-                                <a href="{{ $container->external_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[rgb(var(--ui-primary-rgb))] font-medium hover:underline">
+                                <a href="{{ $container->external_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[rgb(var(--ui-primary-rgb))] font-semibold hover:underline">
                                     @svg('heroicon-o-globe-alt', 'w-3.5 h-3.5') Website
+                                </a>
+                            @endif
+                            @if($devUrl)
+                                <a href="{{ $devUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-gray-500 hover:underline">
+                                    @svg('heroicon-o-beaker', 'w-3.5 h-3.5') Dev / Staging
+                                </a>
+                            @endif
+                            @if($repoUrl)
+                                <a href="{{ $repoUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-gray-500 hover:underline">
+                                    @svg('heroicon-o-code-bracket', 'w-3.5 h-3.5') Repo
                                 </a>
                             @endif
                         </div>
                     </div>
-                    <x-ui-badge :color="$container->status->color()" size="sm">{{ $container->status->label() }}</x-ui-badge>
+                    <span class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+                          style="background: {{ $stBg }}; color: {{ $stDot }};">
+                        <span class="w-1.5 h-1.5 rounded-full" style="background: {{ $stDot }};"></span>
+                        {{ $container->status->label() }}
+                    </span>
                 </div>
 
-                {{-- Stat strip (graceful: 2×2 Basis, 4-across ab md wenn CSS-Klasse vorhanden) --}}
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
-                    <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Offene Aufgaben</div>
-                        <div class="text-2xl font-bold text-[rgb(var(--ui-primary-rgb))]" style="font-family: 'JetBrains Mono', monospace;">{{ $flynkMeta['open_tasks'] ?? '—' }}</div>
+                {{-- Stat strip --}}
+                <div class="relative grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+                    <div class="border border-black/5 p-4" style="border-radius: 1rem; background: rgba(255,255,255,.6);">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Offene Aufgaben</div>
+                        <div class="text-2xl font-bold text-[rgb(var(--ui-primary-rgb))] mt-1" style="font-family: 'JetBrains Mono', monospace;">{{ $flynkMeta['open_tasks'] ?? '—' }}</div>
+                        <div class="text-[10px] text-gray-400 mt-0.5" style="font-family: 'JetBrains Mono', monospace;">{{ $totalTasks !== null ? 'von '.$totalTasks.' gesamt' : ' ' }}</div>
                     </div>
-                    <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3 flex items-center gap-3">
-                        <svg width="46" height="46" viewBox="0 0 46 46" class="flex-shrink-0">
-                            <circle cx="23" cy="23" r="18" fill="none" stroke="#E5E7EB" stroke-width="5"/>
-                            <circle cx="23" cy="23" r="18" fill="none" stroke="rgb(var(--ui-primary-rgb))" stroke-width="5" stroke-linecap="round"
-                                    stroke-dasharray="{{ $circ }}" stroke-dashoffset="{{ $ringOffset }}" transform="rotate(-90 23 23)"
+                    <div class="border border-black/5 p-4 flex items-center gap-3" style="border-radius: 1rem; background: rgba(255,255,255,.6);">
+                        <svg width="50" height="50" viewBox="0 0 50 50" class="flex-shrink-0">
+                            <circle cx="25" cy="25" r="20" fill="none" stroke="#E5E7EB" stroke-width="5"/>
+                            <circle cx="25" cy="25" r="20" fill="none" stroke="rgb(var(--ui-primary-rgb))" stroke-width="5" stroke-linecap="round"
+                                    stroke-dasharray="{{ $circ }}" stroke-dashoffset="{{ $ringOffset }}" transform="rotate(-90 25 25)"
                                     style="transition: stroke-dashoffset .6s ease;" />
                         </svg>
                         <div>
-                            <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-0.5" style="font-family: 'JetBrains Mono', monospace;">Context</div>
-                            <div class="text-lg font-bold" style="font-family: 'JetBrains Mono', monospace;">{{ $pct !== null ? $pct.'%' : '—' }}</div>
+                            <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Context</div>
+                            <div class="text-xl font-bold" style="font-family: 'JetBrains Mono', monospace;">{{ $pct !== null ? $pct.'%' : '—' }}</div>
+                            <div class="text-[10px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">{{ $ctxSub }}</div>
                         </div>
                     </div>
-                    <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Website</div>
+                    <div class="border border-black/5 p-4" style="border-radius: 1rem; background: rgba(255,255,255,.6);">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Website</div>
                         @php
                             $wh = $flynkMeta['website_health'] ?? null;
                             $whMap = ['healthy' => ['success', 'Gesund'], 'warning' => ['warning', 'Warnung'], 'critical' => ['danger', 'Kritisch']];
-                            [$whColor, $whLabel] = $whMap[$wh] ?? ['muted', '—'];
+                            [$whColor, $whLabel] = $whMap[$wh] ?? ['muted', 'unbekannt'];
                         @endphp
-                        <div class="mt-1.5">
+                        <div class="mt-2">
                             <x-ui-badge :color="$whColor" size="sm">{{ $whLabel }}</x-ui-badge>
                         </div>
+                        <div class="text-[10px] text-gray-400 mt-1.5" style="font-family: 'JetBrains Mono', monospace;">{{ $goLive ? 'Go-Live '.$goLive : ' ' }}</div>
                     </div>
-                    <div class="rounded-xl bg-black/[0.02] border border-black/5 p-3">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1" style="font-family: 'JetBrains Mono', monospace;">Letzter Sync</div>
-                        <div class="text-sm font-semibold text-gray-700 mt-1.5" style="font-family: 'JetBrains Mono', monospace;">{{ $container->last_synced_at?->diffForHumans() ?? '—' }}</div>
+                    <div class="border border-black/5 p-4" style="border-radius: 1rem; background: rgba(255,255,255,.6);">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Letzter Sync</div>
+                        <div class="text-sm font-semibold text-gray-700 mt-2" style="font-family: 'JetBrains Mono', monospace;">{{ $container->last_synced_at?->diffForHumans() ?? '—' }}</div>
+                        <div class="text-[10px] text-gray-400 mt-0.5" style="font-family: 'JetBrains Mono', monospace;">{{ $container->last_synced_at?->format('d.m. H:i') ?? ' ' }}</div>
                     </div>
                 </div>
 
                 {{-- Actions --}}
-                <div class="flex flex-wrap items-center gap-2 mt-5">
+                <div class="relative flex flex-wrap items-center gap-2 mt-5">
                     @if($container->isLinked())
                         <x-ui-button variant="primary" size="sm" wire:click="pushNow" wire:loading.attr="disabled">
                             @svg('heroicon-o-paper-airplane', 'w-4 h-4')
@@ -317,11 +344,7 @@
                                 </span>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-2">
-                                        @if(!empty($t['url']))
-                                            <a href="{{ $t['url'] }}" target="_blank" rel="noopener" class="text-sm font-medium text-gray-900 truncate hover:text-[rgb(var(--ui-primary-rgb))]">{{ $t['title'] }}</a>
-                                        @else
-                                            <p class="text-sm font-medium text-gray-900 truncate">{{ $t['title'] }}</p>
-                                        @endif
+                                        <p class="text-sm font-medium text-gray-900 truncate">{{ $t['title'] }}</p>
                                         @if(($t['priority'] ?? null) === 'high')
                                             <span class="flex-shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold" style="background: rgba(239,68,68,.12); color: #dc2626;">HOCH</span>
                                         @endif
