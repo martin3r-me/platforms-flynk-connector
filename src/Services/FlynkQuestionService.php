@@ -111,8 +111,8 @@ class FlynkQuestionService
 
     /**
      * Beantwortet eine Rückfrage (Handshake mit FLYNK):
-     *   1. Kommentar an den Task: { body: <text> }  (is_internal default false =
-     *      für den Kunden sichtbar; auf true setzen für eine rein interne Notiz).
+     *   1. Kommentar an den Task: { body: <text>, is_internal: true } — interne
+     *      Agentur↔FLYNK-Absprache, für den Kunden NICHT sichtbar.
      *   2. Status via PATCH auf "new" → Ball zurück bei FLYNK.
      * Danach lokal als beantwortet markieren.
      */
@@ -121,8 +121,12 @@ class FlynkQuestionService
         $container = $question->container;
         $connection = $this->containers->resolveConnection($container);
 
-        // 1. Antwort als Kommentar an den FLYNK-Task
-        $this->api->addTaskComment($connection, $question->external_id, ['body' => $text]);
+        // 1. Antwort als interner Kommentar an den FLYNK-Task. is_internal=true:
+        //    Rückfragen-Antworten sind Agentur↔FLYNK-Absprachen, NICHT kundensichtbar.
+        $this->api->addTaskComment($connection, $question->external_id, [
+            'body' => $text,
+            'is_internal' => true,
+        ]);
 
         // 2. Status auf "new" → signalisiert FLYNK: Ball ist zurück bei euch
         try {
