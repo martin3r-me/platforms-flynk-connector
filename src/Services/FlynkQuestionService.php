@@ -51,6 +51,10 @@ class FlynkQuestionService
         $tasks = $response['data'] ?? $response ?? [];
         $pulled = 0; $open = 0;
 
+        // FLYNK liefert status/priority mal als Skalar, mal als {label,value}-Objekt.
+        $val = fn ($v) => is_array($v) ? ($v['value'] ?? $v['label'] ?? null) : $v;
+        $name = fn ($v) => is_array($v) ? ($v['name'] ?? null) : $v;
+
         foreach ($tasks as $task) {
             $externalId = $task['id'] ?? $task['uuid'] ?? null;
             if (! $externalId) {
@@ -63,10 +67,10 @@ class FlynkQuestionService
                 'flynk_container_id' => $container->id,
                 'title' => (string) ($task['title'] ?? 'Rückfrage'),
                 'description' => $task['description'] ?? $question->description,
-                'status' => $task['status'] ?? null,
-                'priority' => $task['priority'] ?? null,
+                'status' => $val($task['status'] ?? null),
+                'priority' => $val($task['priority'] ?? null),
                 'target_url' => $task['target_url'] ?? ($task['production_url'] ?? null),
-                'assignee' => $task['assignee_name'] ?? (is_string($task['assignee'] ?? null) ? $task['assignee'] : null),
+                'assignee' => $name($task['assignee_name'] ?? $task['assignee'] ?? null),
                 'source' => $task['source'] ?? null,
                 'flynk_created_at' => $task['created_at'] ?? null,
                 'flynk_updated_at' => $task['updated_at'] ?? null,
@@ -106,23 +110,23 @@ class FlynkQuestionService
     }
 
     /**
-     * Beantwortet eine Rückfrage: Kommentar an FLYNK + Status setzen, lokal als
-     * beantwortet markieren.
-     *
-     * Payload-Default: { body: <text> } + Status "in_progress" — mit Koni final
-     * abzustimmen.
+     * Beantwortet eine Rückfrage (Handshake mit FLYNK):
+     *   1. Kommentar an den Task: { body: <text> }  (is_internal default false =
+     *      für den Kunden sichtbar; auf true setzen für eine rein interne Notiz).
+     *   2. Status via PATCH auf "new" → Ball zurück bei FLYNK.
+     * Danach lokal als beantwortet markieren.
      */
     public function answer(FlynkQuestion $question, string $text, ?int $userId = null): FlynkQuestion
     {
         $container = $question->container;
         $connection = $this->containers->resolveConnection($container);
 
-        // Antwort als Kommentar an den FLYNK-Task
+        // 1. Antwort als Kommentar an den FLYNK-Task
         $this->api->addTaskComment($connection, $question->external_id, ['body' => $text]);
 
-        // Status auf "in Bearbeitung" — signalisiert FLYNK, dass wir geliefert haben
+        // 2. Status auf "new" → signalisiert FLYNK: Ball ist zurück bei euch
         try {
-            $this->api->updateTask($connection, $question->external_id, ['status' => 'in_progress']);
+            $this->api->updateTask($connection, $question->external_id, ['status' => FlynkQuestion::ANSWERED_STATUS]);
         } catch (FlynkApiException $e) {
             // Kommentar ist raus; Status-Update ist best-effort
             Log::info('FLYNK Task-Status-Update nach Antwort fehlgeschlagen', ['task' => $question->external_id, 'error' => $e->getMessage()]);
@@ -132,7 +136,7 @@ class FlynkQuestionService
             'answered_at' => now(),
             'answered_by_user_id' => $userId,
             'answer_text' => $text,
-            'status' => 'in_progress',
+            'status' => FlynkQuestion::ANSWERED_STATUS,
         ]);
 
         FlynkContainerEvent::create([

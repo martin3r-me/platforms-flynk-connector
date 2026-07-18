@@ -19,8 +19,16 @@ class FlynkQuestion extends Model
 
     protected $table = 'flynk_questions';
 
-    /** FLYNK-Status, die eine Rückfrage abschließen (nicht mehr „für uns offen"). */
-    public const CLOSED_STATUSES = ['done', 'rejected'];
+    /**
+     * Handshake mit FLYNK (statusbasiert): FLYNK setzt einen question-Task auf
+     * "on_hold", wenn der Ball bei uns liegt (offene Rückfrage). Nach unserer
+     * Antwort setzen wir ihn auf "new" (Ball zurück bei FLYNK). "on_hold" ist
+     * also unser einziges „wir sind am Zug"-Signal — ping-pong-fähig.
+     */
+    public const OPEN_STATUS = 'on_hold';
+
+    /** Status, den wir setzen, wenn wir geantwortet haben (Ball zurück zu FLYNK). */
+    public const ANSWERED_STATUS = 'new';
 
     protected $fillable = [
         'uuid', 'team_id', 'flynk_container_id',
@@ -52,19 +60,19 @@ class FlynkQuestion extends Model
     public function container(): BelongsTo { return $this->belongsTo(FlynkContainer::class, 'flynk_container_id'); }
     public function answeredBy(): BelongsTo { return $this->belongsTo(User::class, 'answered_by_user_id'); }
 
-    /** Offen = noch nicht von uns beantwortet und in FLYNK nicht abgeschlossen. */
+    /** Offen = FLYNK hat den Task auf "on_hold" gesetzt → der Ball liegt bei uns. */
     public function scopeOpen(Builder $query): Builder
     {
-        return $query->whereNull('answered_at')->whereNotIn('status', self::CLOSED_STATUSES);
-    }
-
-    public function isClosed(): bool
-    {
-        return in_array($this->status, self::CLOSED_STATUSES, true);
+        return $query->where('status', self::OPEN_STATUS);
     }
 
     public function isOpen(): bool
     {
-        return $this->answered_at === null && ! $this->isClosed();
+        return $this->status === self::OPEN_STATUS;
+    }
+
+    public function isClosed(): bool
+    {
+        return ! $this->isOpen();
     }
 }
