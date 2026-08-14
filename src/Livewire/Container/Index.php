@@ -8,15 +8,20 @@ use Livewire\Component;
 use Platform\FlynkConnector\Enums\FlynkContainerStatus;
 use Platform\FlynkConnector\Models\FlynkContainer;
 use Platform\FlynkConnector\Models\FlynkContainerEvent;
+use Platform\FlynkConnector\Models\FlynkQuestion;
 use Platform\FlynkConnector\Services\FlynkContainerService;
 use Platform\Integrations\Models\Integration;
 use Platform\Integrations\Models\IntegrationConnection;
+use Platform\Organization\Models\OrganizationEntity;
 use Platform\Organization\Services\EntityDimensionBridge;
 
 class Index extends Component
 {
     public string $search = '';
     public string $statusFilter = '';
+
+    /** Knoten-Filter (Org-Entity-ID oder 'none' für nicht verortet) — gesetzt aus der Sidebar. */
+    public string $node = '';
 
     public bool $modalShow = false;
 
@@ -34,10 +39,14 @@ class Index extends Component
     protected $queryString = [
         'search'       => ['except' => ''],
         'statusFilter' => ['except' => ''],
+        'node'         => ['except' => ''],
     ];
 
-    public function updatedSearch(): void { unset($this->containers); }
-    public function updatedStatusFilter(): void { unset($this->containers); }
+    public function updatedSearch(): void { unset($this->containers, $this->summary); }
+    public function updatedStatusFilter(): void { unset($this->containers, $this->summary); }
+    public function updatedNode(): void { unset($this->containers, $this->summary); }
+
+    public function clearNode(): void { $this->node = ''; unset($this->containers, $this->summary); }
 
     protected function rules(): array
     {
@@ -71,7 +80,117 @@ class Index extends Component
             $q->where('status', $this->statusFilter);
         }
 
-        return $q->orderBy('name')->get();
+        $containers = $q->orderBy('name')->get();
+
+        if ($this->node !== '') {
+            $allowed = array_flip($this->containerIdsForNode($this->node));
+            $containers = $containers->filter(fn ($c) => isset($allowed[$c->id]))->values();
+        }
+
+        return $containers;
+    }
+
+    /** Container-IDs, die am Knoten (inkl. Unterknoten) hängen — oder 'none' = nicht verortet. */
+    protected function containerIdsForNode(string $node): array
+    {
+        $allIds = FlynkContainer::where('team_id', $this->rootTeamId())->pluck('id')->all();
+        if (empty($allIds)) {
+            return [];
+        }
+
+        $entityByContainer = [];
+        foreach (EntityDimensionBridge::linksForLinkables(['flynk_container'], $allIds, false) as $link) {
+            $entityByContainer[$link->linkable_id][] = (int) $link->entity_id;
+        }
+
+        if ($node === 'none') {
+            return array_values(array_diff($allIds, array_keys($entityByContainer)));
+        }
+
+        $subtree = array_flip($this->descendantEntityIds((int) $node));
+        $result = [];
+        foreach ($entityByContainer as $containerId => $entityIds) {
+            foreach ($entityIds as $eid) {
+                if (isset($subtree[$eid])) { $result[] = $containerId; break; }
+            }
+        }
+
+        return $result;
+    }
+
+    /** Entity-ID des Knotens + alle rekursiven Kinder. */
+    protected function descendantEntityIds(int $rootId): array
+    {
+        $entity = OrganizationEntity::with('allChildren')->find($rootId);
+        if (! $entity) {
+            return [$rootId];
+        }
+
+        $ids = [$rootId];
+        $walk = function ($node) use (&$walk, &$ids) {
+            foreach ($node->allChildren as $child) {
+                $ids[] = (int) $child->id;
+                $walk($child);
+            }
+        };
+        $walk($entity);
+
+        return $ids;
+    }
+
+    /** Anzeigename des aktiven Knoten-Filters. */
+    #[Computed]
+    public function activeNodeName(): ?string
+    {
+        if ($this->node === '') {
+            return null;
+        }
+        if ($this->node === 'none') {
+            return 'Nicht verortet';
+        }
+
+        return OrganizationEntity::find((int) $this->node)?->name ?? 'Knoten';
+    }
+
+    /** container_id => Anzahl offener Rückfragen. */
+    #[Computed]
+    public function openQuestionsByContainer(): array
+    {
+        return FlynkQuestion::query()
+            ->where('team_id', $this->rootTeamId())
+            ->open()
+            ->selectRaw('flynk_container_id, COUNT(*) as c')
+            ->groupBy('flynk_container_id')
+            ->pluck('c', 'flynk_container_id')
+            ->all();
+    }
+
+    /** Kennzahlen über die aktuell gezeigten Container. */
+    #[Computed]
+    public function summary(): array
+    {
+        $c = $this->containers;
+        $health = ['healthy' => 0, 'warning' => 0, 'critical' => 0];
+        $openTasks = 0;
+
+        foreach ($c as $container) {
+            $m = $container->metadata['flynk'] ?? [];
+            $wh = $m['website_health'] ?? null;
+            if (isset($health[$wh])) { $health[$wh]++; }
+            $openTasks += (int) ($m['open_tasks'] ?? 0);
+        }
+
+        $questions = array_sum($this->openQuestionsByContainer);
+
+        return [
+            'total'         => $c->count(),
+            'active'        => $c->where('status', FlynkContainerStatus::ACTIVE)->count(),
+            'error'         => $c->where('status', FlynkContainerStatus::ERROR)->count(),
+            'healthy'       => $health['healthy'],
+            'warning'       => $health['warning'] + $health['critical'],
+            'open_tasks'    => $openTasks,
+            'open_questions'=> $questions,
+        ];
     }
 
     /** container_id => [Knoten-Namen] — gebündelt über alle Container aufgelöst. */

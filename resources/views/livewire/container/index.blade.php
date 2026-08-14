@@ -62,14 +62,42 @@
 
     {{-- Main content --}}
     <x-ui-page-container>
-        <div class="pt-6">
+        <div class="pt-6 space-y-4">
+
+            {{-- Kennzahlen --}}
+            <x-nx-stat-grid :cols="4">
+                <x-nx-stat label="Container" :value="$this->summary['total']"
+                           :hint="$this->summary['error'] > 0 ? $this->summary['error'].' auf Fehler' : 'alle ok'"
+                           icon="heroicon-o-squares-2x2" :accent="$this->summary['error'] > 0 ? 'var(--nx-danger)' : null" />
+                <x-nx-stat label="Aktiv" :value="$this->summary['active']" hint="verbunden & aktiv" icon="heroicon-o-bolt" />
+                <x-nx-stat label="Website gesund" :value="$this->summary['healthy']"
+                           :hint="$this->summary['warning'] > 0 ? $this->summary['warning'].' mit Warnung' : null"
+                           icon="heroicon-o-heart" :accent="$this->summary['warning'] > 0 ? 'var(--nx-warning)' : 'var(--nx-success)'" />
+                <x-nx-stat label="Offene Rückfragen" :value="$this->summary['open_questions']"
+                           hint="warten auf Antwort" icon="heroicon-o-chat-bubble-left-right"
+                           :accent="$this->summary['open_questions'] > 0 ? 'var(--nx-warning)' : null" />
+            </x-nx-stat-grid>
+
+            {{-- Aktiver Knoten-Filter --}}
+            @if($this->activeNodeName)
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="text-[color:var(--nx-muted)]">Gefiltert auf Knoten:</span>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--nx-accent-soft)] px-2 py-0.5 text-[color:var(--nx-text)] font-medium">
+                        @svg('heroicon-o-building-office', 'w-3.5 h-3.5 opacity-70')
+                        {{ $this->activeNodeName }}
+                        <button type="button" wire:click="clearNode" class="ml-0.5 opacity-60 hover:opacity-100" title="Filter entfernen">@svg('heroicon-o-x-mark', 'w-3.5 h-3.5')</button>
+                    </span>
+                </div>
+            @endif
+
             <x-nx-card flush>
                 <x-nx-table>
                     <x-nx-table-header>
                         <x-nx-table-header-cell>Name</x-nx-table-header-cell>
-                        <x-nx-table-header-cell>Knoten</x-nx-table-header-cell>
                         <x-nx-table-header-cell>Status</x-nx-table-header-cell>
+                        <x-nx-table-header-cell>Website</x-nx-table-header-cell>
                         <x-nx-table-header-cell align="center">Aufgaben</x-nx-table-header-cell>
+                        <x-nx-table-header-cell align="center">Rückfragen</x-nx-table-header-cell>
                         <x-nx-table-header-cell>Füllgrad</x-nx-table-header-cell>
                         <x-nx-table-header-cell align="right">Letzter Sync</x-nx-table-header-cell>
                         <x-nx-table-header-cell align="right"></x-nx-table-header-cell>
@@ -83,36 +111,42 @@
                                 $ccPct = $cc !== null ? (int) round((float) $cc * (($cc <= 1) ? 100 : 1)) : null;
                                 $openTasks = $m['open_tasks'] ?? null;
                                 $totalTasks = $m['total_tasks'] ?? null;
+                                $questions = $this->openQuestionsByContainer[$container->id] ?? 0;
                                 $statusColor = $container->status->color();
                                 $statusVariant = in_array($statusColor, ['success', 'danger', 'warning', 'info']) ? $statusColor : 'neutral';
+                                $wh = $m['website_health'] ?? null;
+                                $whMap = ['healthy' => ['success', 'Gesund'], 'warning' => ['warning', 'Warnung'], 'critical' => ['danger', 'Kritisch']];
+                                [$whVariant, $whLabel] = $whMap[$wh] ?? [null, null];
                             @endphp
                             <x-nx-table-row>
-                                {{-- Name + FLYNK-Referenz --}}
+                                {{-- Name + Verortung --}}
                                 <x-nx-table-cell>
                                     <a href="{{ route('flynk-connector.containers.show', $container) }}" wire:navigate
                                        class="font-medium text-[color:var(--nx-text)] hover:text-[color:var(--nx-accent)] hover:underline">
                                         {{ $container->name }}
                                     </a>
-                                    <div class="text-[11px] text-[color:var(--nx-faint)] tabular-nums truncate">
-                                        {{ $container->external_id ? \Illuminate\Support\Str::limit($container->external_id, 20) : 'nicht verbunden' }}
-                                    </div>
-                                </x-nx-table-cell>
-
-                                {{-- Verortung --}}
-                                <x-nx-table-cell>
-                                    @if($nodes)
-                                        <span class="inline-flex items-center gap-1.5 text-[color:var(--nx-muted)]">
-                                            @svg('heroicon-o-building-office', 'w-3.5 h-3.5 flex-shrink-0 opacity-60')
+                                    <div class="flex items-center gap-1 text-[11px] text-[color:var(--nx-faint)] truncate">
+                                        @if($nodes)
+                                            @svg('heroicon-o-building-office', 'w-3 h-3 flex-shrink-0 opacity-60')
                                             <span class="truncate">{{ $nodes }}</span>
-                                        </span>
-                                    @else
-                                        <span class="text-[color:var(--nx-faint)]">—</span>
-                                    @endif
+                                        @else
+                                            <span>nicht verortet</span>
+                                        @endif
+                                    </div>
                                 </x-nx-table-cell>
 
                                 {{-- Status --}}
                                 <x-nx-table-cell>
                                     <x-nx-badge :variant="$statusVariant" dot>{{ $container->status->label() }}</x-nx-badge>
+                                </x-nx-table-cell>
+
+                                {{-- Website-Health --}}
+                                <x-nx-table-cell>
+                                    @if($whVariant)
+                                        <x-nx-badge :variant="$whVariant">{{ $whLabel }}</x-nx-badge>
+                                    @else
+                                        <span class="text-[color:var(--nx-faint)]">—</span>
+                                    @endif
                                 </x-nx-table-cell>
 
                                 {{-- Aufgaben --}}
@@ -121,6 +155,15 @@
                                         <span class="tabular-nums {{ $openTasks > 0 ? 'text-[color:var(--nx-text)]' : 'text-[color:var(--nx-faint)]' }}">
                                             {{ $openTasks }}@if($totalTasks !== null)<span class="text-[color:var(--nx-faint)]">/{{ $totalTasks }}</span>@endif
                                         </span>
+                                    @else
+                                        <span class="text-[color:var(--nx-faint)]">—</span>
+                                    @endif
+                                </x-nx-table-cell>
+
+                                {{-- Rückfragen --}}
+                                <x-nx-table-cell align="center">
+                                    @if($questions > 0)
+                                        <x-nx-badge variant="warning">{{ $questions }}</x-nx-badge>
                                     @else
                                         <span class="text-[color:var(--nx-faint)]">—</span>
                                     @endif
@@ -154,9 +197,9 @@
                             </x-nx-table-row>
                         @empty
                             <x-nx-table-row>
-                                <x-nx-table-cell colspan="7">
+                                <x-nx-table-cell colspan="8">
                                     <x-nx-empty icon="heroicon-o-arrows-right-left">
-                                        Keine Container — lege einen an und verbinde ihn mit einem FLYNK-Project.
+                                        {{ $this->activeNodeName ? 'Keine Container an diesem Knoten.' : 'Keine Container — lege einen an und verbinde ihn mit einem FLYNK-Project.' }}
                                         <x-slot name="action">
                                             <x-nx-button variant="primary" size="sm" wire:click="create">
                                                 @svg('heroicon-o-plus', 'w-4 h-4') Neuer Container

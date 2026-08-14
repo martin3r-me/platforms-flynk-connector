@@ -37,8 +37,10 @@
         </div>
     </div>
 
-    {{-- Baum: Org-Knoten mit Containern (nach Entity-Typ gruppiert) --}}
+    {{-- Baum: Org-Knoten (nach Entity-Typ gruppiert). Klick filtert die Container-Liste. --}}
     <div x-show="!collapsed" class="mt-2 px-2">
+        <div class="px-2 mb-1 text-[9px] uppercase tracking-widest text-gray-600 font-medium">Nach Knoten</div>
+
         @foreach($entityTypeGroups as $typeGroup)
             <div wire:key="type-group-{{ $typeGroup['type_id'] }}" class="mb-2">
                 <div class="px-2 mb-0.5 text-[9px] uppercase tracking-widest text-gray-600 font-medium">{{ $typeGroup['type_name'] }}</div>
@@ -48,18 +50,14 @@
             </div>
         @endforeach
 
-        {{-- Container ohne Verortung --}}
+        {{-- Nicht verortet — als Filter, nicht als Container-Liste --}}
         @if($unassignedContainers->isNotEmpty())
-            <div class="mb-2">
-                <div class="px-2 mb-0.5 text-[9px] uppercase tracking-widest text-gray-600 font-medium">Nicht verortet</div>
-                @foreach($unassignedContainers as $container)
-                    <a href="{{ route('flynk-connector.containers.show', $container) }}" wire:navigate
-                       class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] text-gray-300 hover:bg-[#2C3135] hover:text-white transition-colors">
-                        <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-[rgb(var(--ui-{{ $container->status->color() }}-rgb))]"></span>
-                        <span class="truncate">{{ $container->name }}</span>
-                    </a>
-                @endforeach
-            </div>
+            <a href="{{ route('flynk-connector.containers.index', ['node' => 'none']) }}" wire:navigate
+               class="flex items-center gap-1 py-1 px-2 rounded-md hover:bg-[#2C3135] transition-colors">
+                <span class="w-3 h-3 flex-shrink-0"></span>
+                <span class="flex-1 min-w-0 truncate text-xs font-medium text-gray-400">Nicht verortet</span>
+                <span class="text-[10px] tabular-nums text-gray-600">{{ $unassignedContainers->count() }}</span>
+            </a>
         @endif
 
         @if($entityTypeGroups->isEmpty() && $unassignedContainers->isEmpty())
