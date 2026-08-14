@@ -3,7 +3,7 @@
         <span class="text-[10px] uppercase tracking-widest text-gray-500 font-medium">FLYNK Connector</span>
     </div>
 
-    {{-- Expanded --}}
+    {{-- Expanded: Navigation --}}
     <div x-show="!collapsed" class="px-2 mb-1">
         <a href="{{ route('flynk-connector.containers.index') }}" wire:navigate
            class="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-[13px] text-gray-300 hover:bg-[#2C3135] hover:text-white transition-colors">
@@ -20,7 +20,7 @@
         </a>
     </div>
 
-    {{-- Collapsed --}}
+    {{-- Collapsed: Icons --}}
     <div x-show="collapsed" class="px-2 py-2 border-b border-[#2C3135]">
         <div class="flex flex-col gap-2">
             <a href="{{ route('flynk-connector.containers.index') }}" wire:navigate
@@ -37,14 +37,33 @@
         </div>
     </div>
 
-    {{-- Container-Liste --}}
-    <div x-show="!collapsed" class="mt-2 px-2 space-y-0.5">
-        @foreach($containers as $container)
-            <a href="{{ route('flynk-connector.containers.show', $container) }}" wire:navigate
-               class="flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] text-gray-300 hover:bg-[#2C3135] hover:text-white transition-colors">
-                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-[rgb(var(--ui-{{ $container->status->color() }}-rgb))]"></span>
-                <span class="truncate">{{ $container->name }}</span>
-            </a>
+    {{-- Baum: Org-Knoten mit Containern (nach Entity-Typ gruppiert) --}}
+    <div x-show="!collapsed" class="mt-2 px-2">
+        @foreach($entityTypeGroups as $typeGroup)
+            <div wire:key="type-group-{{ $typeGroup['type_id'] }}" class="mb-2">
+                <div class="px-2 mb-0.5 text-[9px] uppercase tracking-widest text-gray-600 font-medium">{{ $typeGroup['type_name'] }}</div>
+                @foreach($typeGroup['entities'] as $node)
+                    @include('flynk-connector::livewire.partials.sidebar-entity-node', ['node' => $node])
+                @endforeach
+            </div>
         @endforeach
+
+        {{-- Container ohne Verortung --}}
+        @if($unassignedContainers->isNotEmpty())
+            <div class="mb-2">
+                <div class="px-2 mb-0.5 text-[9px] uppercase tracking-widest text-gray-600 font-medium">Nicht verortet</div>
+                @foreach($unassignedContainers as $container)
+                    <a href="{{ route('flynk-connector.containers.show', $container) }}" wire:navigate
+                       class="flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] text-gray-300 hover:bg-[#2C3135] hover:text-white transition-colors">
+                        <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-[rgb(var(--ui-{{ $container->status->color() }}-rgb))]"></span>
+                        <span class="truncate">{{ $container->name }}</span>
+                    </a>
+                @endforeach
+            </div>
+        @endif
+
+        @if($entityTypeGroups->isEmpty() && $unassignedContainers->isEmpty())
+            <div class="px-3 py-2 text-xs text-gray-500">Noch keine Container.</div>
+        @endif
     </div>
 </div>
