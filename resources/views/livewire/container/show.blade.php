@@ -3,6 +3,10 @@
         <x-ui-page-navbar title="" />
     </x-slot>
 
+    @php
+        $statusVariant = in_array($container->status->color(), ['success', 'danger', 'warning', 'info']) ? $container->status->color() : 'neutral';
+    @endphp
+
     <x-slot name="actionbar">
         <x-ui-page-actionbar :breadcrumbs="[
             ['label' => 'FLYNK Container', 'href' => route('flynk-connector.containers.index')],
@@ -10,12 +14,12 @@
         ]">
             <x-slot name="left">
                 @if($this->isDirty)
-                    <x-ui-button variant="secondary" size="xs" wire:click="loadForm">Abbrechen</x-ui-button>
-                    <x-ui-button variant="primary" size="xs" wire:click="save">Speichern</x-ui-button>
+                    <x-nx-button variant="ghost" size="sm" wire:click="loadForm">Abbrechen</x-nx-button>
+                    <x-nx-button variant="primary" size="sm" wire:click="save">Speichern</x-nx-button>
                 @endif
             </x-slot>
 
-            <x-ui-badge :color="$container->status->color()" size="sm">{{ $container->status->label() }}</x-ui-badge>
+            <x-nx-badge :variant="$statusVariant" dot>{{ $container->status->label() }}</x-nx-badge>
         </x-ui-page-actionbar>
     </x-slot>
 
@@ -24,30 +28,28 @@
         <x-ui-page-sidebar title="Container" :defaultOpen="true" side="left">
             <div class="p-4 space-y-4 text-xs">
                 <div>
-                    <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">Verortung</div>
+                    <div class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--nx-faint)] mb-1">Verortung</div>
                     @forelse($container->linkedEntities() as $entity)
-                        <div class="flex items-center gap-1.5 text-gray-700">
-                            @svg('heroicon-o-building-office', 'w-3.5 h-3.5 text-gray-400')
+                        <div class="flex items-center gap-1.5 text-[color:var(--nx-text)]">
+                            @svg('heroicon-o-building-office', 'w-3.5 h-3.5 text-[color:var(--nx-faint)]')
                             <span>{{ $entity->name }}</span>
                         </div>
                     @empty
-                        <span class="text-gray-400">Kein Knoten</span>
+                        <span class="text-[color:var(--nx-faint)]">Kein Knoten</span>
                     @endforelse
                 </div>
-                <div class="border-t border-gray-200 pt-3">
-                    <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">FLYNK-Verbindung</div>
-                    <div class="text-gray-700">{{ $container->connection?->name ?? 'Team-Standard' }}</div>
+                <div class="border-t border-[color:var(--nx-line)] pt-3">
+                    <div class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--nx-faint)] mb-1">FLYNK-Verbindung</div>
+                    <div class="text-[color:var(--nx-text)]">{{ $container->connection?->name ?? 'Team-Standard' }}</div>
                 </div>
-                <div class="border-t border-gray-200 pt-3">
-                    <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">FLYNK-Project</div>
-                    <div class="text-gray-700 break-all" style="font-family: 'JetBrains Mono', monospace;">
-                        {{ $container->external_id ?? 'nicht verbunden' }}
-                    </div>
+                <div class="border-t border-[color:var(--nx-line)] pt-3">
+                    <div class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--nx-faint)] mb-1">FLYNK-Project</div>
+                    <div class="text-[color:var(--nx-muted)] break-all tabular-nums">{{ $container->external_id ?? 'nicht verbunden' }}</div>
                 </div>
                 @if($container->external_url)
-                    <div class="border-t border-gray-200 pt-3">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">Live-Website</div>
-                        <a href="{{ $container->external_url }}" target="_blank" rel="noopener" class="text-[rgb(var(--ui-primary-rgb))] hover:underline inline-flex items-center gap-1 break-all">
+                    <div class="border-t border-[color:var(--nx-line)] pt-3">
+                        <div class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--nx-faint)] mb-1">Live-Website</div>
+                        <a href="{{ $container->external_url }}" target="_blank" rel="noopener" class="text-[color:var(--nx-accent)] hover:underline inline-flex items-center gap-1 break-all">
                             @svg('heroicon-o-globe-alt', 'w-3 h-3 flex-shrink-0') {{ $container->external_url }}
                         </a>
                     </div>
@@ -56,7 +58,7 @@
         </x-ui-page-sidebar>
     </x-slot>
 
-    {{-- Right activity sidebar: Event-Log --}}
+    {{-- Right activity sidebar --}}
     <x-slot name="activity">
         <x-ui-page-sidebar title="Aktivität" icon="heroicon-o-bolt" width="w-80" :defaultOpen="false" storeKey="activityOpen" side="right">
             <div class="p-4 space-y-3">
@@ -66,20 +68,18 @@
                             @svg($event->icon(), 'w-4 h-4 text-[rgb(var(--ui-' . $event->color() . '-rgb))]')
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="font-medium text-gray-900">{{ $event->title }}</p>
+                            <p class="font-medium text-[color:var(--nx-text)]">{{ $event->title }}</p>
                             @if($event->message)
-                                <p class="text-[11px] text-gray-500 mt-0.5 break-words">{{ $event->message }}</p>
+                                <p class="text-[11px] text-[color:var(--nx-muted)] mt-0.5 break-words">{{ $event->message }}</p>
                             @endif
-                            <div class="flex items-center gap-2 text-gray-400 mt-0.5">
-                                <span style="font-family: 'JetBrains Mono', monospace;">{{ $event->created_at->format('d.m. H:i') }}</span>
-                                @if($event->user)
-                                    <span>&middot; {{ $event->user->name }}</span>
-                                @endif
+                            <div class="flex items-center gap-2 text-[color:var(--nx-faint)] mt-0.5 tabular-nums">
+                                <span>{{ $event->created_at->format('d.m. H:i') }}</span>
+                                @if($event->user)<span>&middot; {{ $event->user->name }}</span>@endif
                             </div>
                         </div>
                     </div>
                 @empty
-                    <p class="text-xs text-gray-400 text-center py-4">Noch keine Ereignisse.</p>
+                    <p class="text-xs text-[color:var(--nx-faint)] text-center py-4">Noch keine Ereignisse.</p>
                 @endforelse
             </div>
         </x-ui-page-sidebar>
@@ -89,301 +89,231 @@
     <x-ui-page-container>
         @php
             $flynkMeta = $container->metadata['flynk'] ?? [];
-            $completeness = $flynkMeta['context_completeness'] ?? null;
-            $pct = $completeness !== null ? (int) round((float) $completeness * (($completeness <= 1) ? 100 : 1)) : null;
-            $circ = 126; $ringOffset = $pct !== null ? $circ - ($circ * $pct / 100) : $circ;
-            $ctxSub = $pct === null ? '—' : ($pct <= 0 ? 'noch leer' : ($pct >= 100 ? 'vollständig' : 'in Arbeit'));
+            $comp = $this->completeness;
             $totalTasks = $flynkMeta['total_tasks'] ?? null;
             $goLiveRaw = $flynkMeta['went_live_at'] ?? ($flynkMeta['go_live_at'] ?? null);
             $goLive = $goLiveRaw ? \Illuminate\Support\Carbon::parse($goLiveRaw)->format('d.m.Y') : null;
-            $statusVal = $container->status->value;
-            [$stDot, $stBg] = $statusVal === 'active' ? ['#059669', 'rgba(16,185,129,.12)'] : ['#64748b', 'rgba(100,116,139,.12)'];
             $devUrl = $flynkMeta['dev_url'] ?? null;
             $repoUrl = $flynkMeta['github_repo'] ?? null;
+            $wh = $flynkMeta['website_health'] ?? null;
+            $whMap = ['healthy' => ['success', 'Gesund'], 'warning' => ['warning', 'Warnung'], 'critical' => ['danger', 'Kritisch']];
+            [$whVariant, $whLabel] = $whMap[$wh] ?? ['neutral', 'unbekannt'];
         @endphp
 
         <div class="py-6 max-w-4xl space-y-5">
 
-            {{-- ═══ Hero ═══ --}}
-            <div class="relative overflow-hidden border border-black/5 bg-white/70 backdrop-blur-sm p-6"
-                 style="border-radius: 1.5rem;">
-                {{-- Deko-Glow --}}
-                <span class="absolute pointer-events-none" aria-hidden="true"
-                      style="top: -5rem; right: -5rem; width: 15rem; height: 15rem; border-radius: 9999px; background: radial-gradient(circle, rgb(var(--ui-primary-rgb) / 0.18), transparent 70%);"></span>
-
-                <div class="relative flex items-start justify-between gap-4 flex-wrap">
+            {{-- ═══ Header ═══ --}}
+            <div class="space-y-4">
+                <div class="flex items-start justify-between gap-3 flex-wrap">
                     <div class="min-w-0">
-                        <div class="flex items-center gap-2 text-[11px] text-gray-400 mb-2 flex-wrap" style="font-family: 'JetBrains Mono', monospace;">
+                        <div class="flex items-center gap-2 text-[11px] text-[color:var(--nx-faint)] mb-1.5 flex-wrap tabular-nums">
                             @foreach($container->linkedEntities() as $entity)
                                 <span class="inline-flex items-center gap-1">@svg('heroicon-o-building-office', 'w-3 h-3') {{ $entity->name }}</span>
-                                <span class="text-gray-300">·</span>
+                                <span class="opacity-50">·</span>
                             @endforeach
                             @if($container->external_id)
                                 <span class="inline-flex items-center gap-1">@svg('heroicon-o-link', 'w-3 h-3') {{ \Illuminate\Support\Str::limit($container->external_id, 20) }}</span>
                             @endif
                         </div>
-                        <h1 class="text-2xl font-bold tracking-tight text-[color:var(--ui-text)]">{{ $container->name }}</h1>
-                        <div class="flex items-center gap-3 mt-2 text-xs flex-wrap">
+                        <h1 class="text-2xl font-semibold tracking-tight text-[color:var(--nx-text)]">{{ $container->name }}</h1>
+                        <div class="flex items-center gap-3 mt-1.5 text-xs flex-wrap">
                             @if($container->external_url)
-                                <a href="{{ $container->external_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[rgb(var(--ui-primary-rgb))] font-semibold hover:underline">
+                                <a href="{{ $container->external_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[color:var(--nx-accent)] font-medium hover:underline">
                                     @svg('heroicon-o-globe-alt', 'w-3.5 h-3.5') Website
                                 </a>
                             @endif
                             @if($devUrl)
-                                <a href="{{ $devUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-gray-500 hover:underline">
+                                <a href="{{ $devUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[color:var(--nx-muted)] hover:underline">
                                     @svg('heroicon-o-beaker', 'w-3.5 h-3.5') Dev / Staging
                                 </a>
                             @endif
                             @if($repoUrl)
-                                <a href="{{ $repoUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-gray-500 hover:underline">
+                                <a href="{{ $repoUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[color:var(--nx-muted)] hover:underline">
                                     @svg('heroicon-o-code-bracket', 'w-3.5 h-3.5') Repo
                                 </a>
                             @endif
                         </div>
                     </div>
-                    <span class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
-                          style="background: {{ $stBg }}; color: {{ $stDot }};">
-                        <span class="w-1.5 h-1.5 rounded-full" style="background: {{ $stDot }};"></span>
-                        {{ $container->status->label() }}
-                    </span>
+                    <x-nx-badge :variant="$statusVariant" dot>{{ $container->status->label() }}</x-nx-badge>
                 </div>
 
                 {{-- Stat strip --}}
-                <div class="relative grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
-                    <div class="border border-black/5 p-4" style="border-radius: 1rem; background: rgba(255,255,255,.6);">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Offene Aufgaben</div>
-                        <div class="text-2xl font-bold text-[rgb(var(--ui-primary-rgb))] mt-1" style="font-family: 'JetBrains Mono', monospace;">{{ $flynkMeta['open_tasks'] ?? '—' }}</div>
-                        <div class="text-[10px] text-gray-400 mt-0.5" style="font-family: 'JetBrains Mono', monospace;">{{ $totalTasks !== null ? 'von '.$totalTasks.' gesamt' : ' ' }}</div>
-                    </div>
-                    <div class="border border-black/5 p-4 flex items-center gap-3" style="border-radius: 1rem; background: rgba(255,255,255,.6);">
-                        <svg width="50" height="50" viewBox="0 0 50 50" class="flex-shrink-0">
-                            <circle cx="25" cy="25" r="20" fill="none" stroke="#E5E7EB" stroke-width="5"/>
-                            <circle cx="25" cy="25" r="20" fill="none" stroke="rgb(var(--ui-primary-rgb))" stroke-width="5" stroke-linecap="round"
-                                    stroke-dasharray="{{ $circ }}" stroke-dashoffset="{{ $ringOffset }}" transform="rotate(-90 25 25)"
-                                    style="transition: stroke-dashoffset .6s ease;" />
-                        </svg>
-                        <div>
-                            <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Context</div>
-                            <div class="text-xl font-bold" style="font-family: 'JetBrains Mono', monospace;">{{ $pct !== null ? $pct.'%' : '—' }}</div>
-                            <div class="text-[10px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">{{ $ctxSub }}</div>
-                        </div>
-                    </div>
-                    <div class="border border-black/5 p-4" style="border-radius: 1rem; background: rgba(255,255,255,.6);">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Website</div>
-                        @php
-                            $wh = $flynkMeta['website_health'] ?? null;
-                            $whMap = ['healthy' => ['success', 'Gesund'], 'warning' => ['warning', 'Warnung'], 'critical' => ['danger', 'Kritisch']];
-                            [$whColor, $whLabel] = $whMap[$wh] ?? ['muted', 'unbekannt'];
-                        @endphp
-                        <div class="mt-2">
-                            <x-ui-badge :color="$whColor" size="sm">{{ $whLabel }}</x-ui-badge>
-                        </div>
-                        <div class="text-[10px] text-gray-400 mt-1.5" style="font-family: 'JetBrains Mono', monospace;">{{ $goLive ? 'Go-Live '.$goLive : ' ' }}</div>
-                    </div>
-                    <div class="border border-black/5 p-4" style="border-radius: 1rem; background: rgba(255,255,255,.6);">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Letzter Sync</div>
-                        <div class="text-sm font-semibold text-gray-700 mt-2" style="font-family: 'JetBrains Mono', monospace;">{{ $container->last_synced_at?->diffForHumans() ?? '—' }}</div>
-                        <div class="text-[10px] text-gray-400 mt-0.5" style="font-family: 'JetBrains Mono', monospace;">{{ $container->last_synced_at?->format('d.m. H:i') ?? ' ' }}</div>
-                    </div>
-                </div>
+                <x-nx-stat-grid :cols="4">
+                    <x-nx-stat label="Offene Aufgaben" :value="$flynkMeta['open_tasks'] ?? '—'" :hint="$totalTasks !== null ? 'von '.$totalTasks.' gesamt' : null" icon="heroicon-o-clipboard-document-check" />
+                    <x-nx-stat label="Füllgrad" :value="$comp['score'].'%'" :hint="data_get($comp, 'gates.'.$comp['stage'].'.label')" icon="heroicon-o-clipboard-document-check" accent="var(--nx-accent)" />
+                    <x-nx-stat label="Website" :value="$whLabel" :hint="$goLive ? 'Go-Live '.$goLive : null" icon="heroicon-o-heart" />
+                    <x-nx-stat label="Letzter Sync" :value="$container->last_synced_at?->diffForHumans() ?? '—'" :hint="$container->last_synced_at?->format('d.m. H:i')" icon="heroicon-o-clock" />
+                </x-nx-stat-grid>
 
                 {{-- Actions --}}
-                <div class="relative flex flex-wrap items-center gap-2 mt-5">
+                <div class="flex flex-wrap items-center gap-2">
                     @if($container->isLinked())
-                        <x-ui-button variant="primary" size="sm" wire:click="pushNow" wire:loading.attr="disabled">
-                            @svg('heroicon-o-paper-airplane', 'w-4 h-4')
-                            Kontext an FLYNK pushen
-                        </x-ui-button>
-                        <x-ui-button variant="secondary" size="sm" wire:click="syncMeta" wire:loading.attr="disabled">
-                            @svg('heroicon-o-arrow-down-tray', 'w-4 h-4')
-                            Meta aktualisieren
-                        </x-ui-button>
-                        <x-ui-button variant="secondary" size="sm" wire:click="pushUpdate" wire:loading.attr="disabled">
-                            @svg('heroicon-o-arrow-path', 'w-4 h-4')
-                            Projektfelder
-                        </x-ui-button>
-                        <x-ui-button variant="secondary" size="sm" wire:click="testConnection">
-                            @svg('heroicon-o-signal', 'w-4 h-4')
-                            Verbindung testen
-                        </x-ui-button>
+                        <x-nx-button variant="primary" size="sm" wire:click="pushNow" wire:loading.attr="disabled">
+                            @svg('heroicon-o-paper-airplane', 'w-4 h-4') Kontext an FLYNK pushen
+                        </x-nx-button>
+                        <x-nx-button variant="secondary" size="sm" wire:click="syncMeta" wire:loading.attr="disabled">
+                            @svg('heroicon-o-arrow-down-tray', 'w-4 h-4') Meta aktualisieren
+                        </x-nx-button>
+                        <x-nx-button variant="secondary" size="sm" wire:click="pushUpdate" wire:loading.attr="disabled">
+                            @svg('heroicon-o-arrow-path', 'w-4 h-4') Projektfelder
+                        </x-nx-button>
+                        <x-nx-button variant="secondary" size="sm" wire:click="testConnection">
+                            @svg('heroicon-o-signal', 'w-4 h-4') Verbindung testen
+                        </x-nx-button>
                         <div class="ml-auto">
-                            <x-ui-button variant="danger" size="sm" wire:click="unregister" wire:confirm="Container wirklich von FLYNK abmelden? Das FLYNK-Project wird entfernt.">
-                                @svg('heroicon-o-x-circle', 'w-4 h-4')
-                                Abmelden
-                            </x-ui-button>
+                            <x-nx-button variant="danger" size="sm" wire:click="unregister" wire:confirm="Container wirklich von FLYNK abmelden? Das FLYNK-Project wird entfernt.">
+                                @svg('heroicon-o-x-circle', 'w-4 h-4') Abmelden
+                            </x-nx-button>
                         </div>
                     @else
-                        <x-ui-button variant="primary" size="sm" wire:click="createRemote" wire:loading.attr="disabled">
-                            @svg('heroicon-o-plus', 'w-4 h-4')
-                            In FLYNK anlegen
-                        </x-ui-button>
+                        <x-nx-button variant="primary" size="sm" wire:click="createRemote" wire:loading.attr="disabled">
+                            @svg('heroicon-o-plus', 'w-4 h-4') In FLYNK anlegen
+                        </x-nx-button>
                         <div class="flex items-end gap-2 flex-1" style="min-width: 15rem;">
                             <div class="flex-1">
-                                <x-ui-input-text wire:model="relinkExternalId" label="Bestehendes Project verknüpfen (UUID)" placeholder="FLYNK-Project-UUID" size="sm" />
+                                <x-nx-input-text name="relinkExternalId" wire:model="relinkExternalId" label="Bestehendes Project verknüpfen (UUID)" placeholder="FLYNK-Project-UUID" size="sm" />
                             </div>
-                            <x-ui-button variant="secondary" size="sm" wire:click="relink">
-                                @svg('heroicon-o-link', 'w-4 h-4')
-                                Verknüpfen
-                            </x-ui-button>
+                            <x-nx-button variant="secondary" size="sm" wire:click="relink">
+                                @svg('heroicon-o-link', 'w-4 h-4') Verknüpfen
+                            </x-nx-button>
                         </div>
                     @endif
                 </div>
             </div>
 
-            {{-- ═══ Füllgrad (FLYNK-Anforderungsprofil) ═══ --}}
+            {{-- ═══ Füllgrad ═══ --}}
             @php
-                $comp     = $this->completeness;
-                $gates    = $comp['gates'];
-                $score    = $comp['score'];
-                $fields   = collect($comp['fields']);
-                $missing  = $fields->where('satisfied', false);
+                $gates = $comp['gates'];
+                $fields = collect($comp['fields']);
+                $missing = $fields->where('satisfied', false);
                 $blockers = $missing->whereIn('tier', ['required', 'publishable', 'draft'])
                     ->sortBy(fn ($f) => ['required' => 0, 'publishable' => 1, 'draft' => 2][$f['tier']] ?? 9)->values();
                 $idealMissing = $missing->where('tier', 'ideal')->values();
                 $moduleLabel = ['brand' => 'Brand', 'seo' => 'SEO', 'crm' => 'CRM', 'commerce' => 'Commerce', 'connector' => 'Connector', '—' => 'ohne Quelle'];
-                $nodeLabel   = ['self' => 'Website-Knoten', 'customer' => 'Kunden-Knoten', '—' => '—'];
-                $scoreCirc   = 126; $scoreOffset = $scoreCirc - ($scoreCirc * $score / 100);
+                $nodeLabel = ['self' => 'Website-Knoten', 'customer' => 'Kunden-Knoten', '—' => '—'];
             @endphp
 
-            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
-                <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
-                    <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] inline-flex items-center gap-2" style="font-family: 'JetBrains Mono', monospace;">
-                        @svg('heroicon-o-clipboard-document-check', 'w-4 h-4')
-                        Füllgrad
-                        <span class="normal-case tracking-normal text-[10px] font-medium text-gray-400">gegen FLYNK-Anforderungsprofil</span>
-                    </h2>
-                    <div class="flex items-center gap-2">
-                        <svg width="34" height="34" viewBox="0 0 50 50" class="flex-shrink-0">
-                            <circle cx="25" cy="25" r="20" fill="none" stroke="#E5E7EB" stroke-width="6"/>
-                            <circle cx="25" cy="25" r="20" fill="none" stroke="rgb(var(--ui-primary-rgb))" stroke-width="6" stroke-linecap="round"
-                                    stroke-dasharray="{{ $scoreCirc }}" stroke-dashoffset="{{ $scoreOffset }}" transform="rotate(-90 25 25)"
-                                    style="transition: stroke-dashoffset .6s ease;" />
-                        </svg>
-                        <div class="leading-tight">
-                            <div class="text-lg font-bold" style="font-family: 'JetBrains Mono', monospace;">{{ $score }}%</div>
-                            <div class="text-[10px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Ideal {{ $comp['ideal']['done'] }}/{{ $comp['ideal']['total'] }}</div>
+            <x-nx-card>
+                <x-nx-section icon="heroicon-o-clipboard-document-check" title="Füllgrad" description="gegen FLYNK-Anforderungsprofil">
+                    <x-slot name="action">
+                        <div class="text-right leading-tight">
+                            <div class="text-lg font-semibold tabular-nums text-[color:var(--nx-text)]">{{ $comp['score'] }}%</div>
+                            <div class="text-[10px] text-[color:var(--nx-faint)] tabular-nums">Ideal {{ $comp['ideal']['done'] }}/{{ $comp['ideal']['total'] }}</div>
                         </div>
-                    </div>
-                </div>
+                    </x-slot>
 
-                {{-- Tore --}}
-                <div class="grid grid-cols-3 gap-2 mb-4">
-                    @foreach($gates as $tier => $g)
-                        @php
-                            $passed = $g['passed'];
-                            [$bg, $fg] = $passed
-                                ? ['rgba(16,185,129,.12)', '#059669']
-                                : ($tier === 'draft' ? ['rgba(245,158,11,.12)', '#d97706'] : ['rgba(239,68,68,.10)', '#dc2626']);
-                        @endphp
-                        <div class="flex items-center gap-2 px-3 py-2 rounded-xl" style="background: {{ $bg }};">
-                            @svg($passed ? 'heroicon-o-check-circle' : 'heroicon-o-exclamation-circle', 'w-4 h-4 flex-shrink-0', ['style' => "color: {$fg}"])
-                            <div class="min-w-0">
-                                <div class="text-[11px] font-semibold truncate" style="color: {{ $fg }};">{{ $g['label'] }}</div>
-                                <div class="text-[10px]" style="color: {{ $fg }}; opacity:.75; font-family: 'JetBrains Mono', monospace;">{{ $g['done'] }}/{{ $g['total'] }}</div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-
-                {{-- Blocker (Arbeitsauftrag) --}}
-                @if($blockers->isNotEmpty())
-                    <div class="space-y-1.5">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Blocker — {{ $blockers->count() }}</div>
-                        @foreach($blockers as $f)
-                            <div class="flex items-start gap-2.5 py-1.5 border-b border-gray-100 last:border-0">
-                                <span class="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $f['tier'] === 'draft' ? '#d97706' : '#dc2626' }};"></span>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <span class="text-xs font-medium text-gray-900">{{ $f['label'] }}</span>
-                                        <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-black/[0.05] text-gray-500" style="font-family: 'JetBrains Mono', monospace;">{{ $moduleLabel[$f['module']] ?? $f['module'] }} · {{ $nodeLabel[$f['node']] ?? $f['node'] }}</span>
-                                    </div>
-                                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">{{ $f['consequence'] }}</p>
+                    {{-- Tore --}}
+                    <div class="grid grid-cols-3 gap-2 mb-4">
+                        @foreach($gates as $tier => $g)
+                            @php
+                                $passed = $g['passed'];
+                                [$bg, $fg] = $passed
+                                    ? ['rgba(47,158,68,.10)', 'var(--nx-success)']
+                                    : ($tier === 'draft' ? ['rgba(232,89,12,.10)', 'var(--nx-warning)'] : ['rgba(224,49,49,.09)', 'var(--nx-danger)']);
+                            @endphp
+                            <div class="flex items-center gap-2 px-3 py-2 rounded-[8px]" style="background: {{ $bg }};">
+                                @svg($passed ? 'heroicon-o-check-circle' : 'heroicon-o-exclamation-circle', 'w-4 h-4 flex-shrink-0', ['style' => "color: {$fg}"])
+                                <div class="min-w-0">
+                                    <div class="text-[11px] font-semibold truncate" style="color: {{ $fg }};">{{ $g['label'] }}</div>
+                                    <div class="text-[10px] tabular-nums" style="color: {{ $fg }}; opacity:.75;">{{ $g['done'] }}/{{ $g['total'] }}</div>
                                 </div>
                             </div>
                         @endforeach
                     </div>
-                @else
-                    <div class="flex items-center gap-2 text-xs text-[rgb(var(--ui-success-rgb))] font-medium">
-                        @svg('heroicon-o-check-badge', 'w-4 h-4') Alle Tore erfüllt — go-live- und entwurfsfähig.
-                    </div>
-                @endif
 
-                {{-- Weitere Ideal-Lücken --}}
-                @if($idealMissing->isNotEmpty())
-                    <div class="mt-3 pt-3 border-t border-gray-100" x-data="{ open: false }">
-                        <button type="button" @click="open = !open" class="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600" style="font-family: 'JetBrains Mono', monospace;">
-                            Weitere Ideal-Lücken · {{ $idealMissing->count() }}
-                            <span class="transition-transform" :class="open ? 'rotate-90' : ''">@svg('heroicon-o-chevron-right', 'w-3 h-3')</span>
-                        </button>
-                        <div x-show="open" x-collapse x-cloak class="mt-2 flex flex-wrap gap-1.5">
-                            @foreach($idealMissing as $f)
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/[0.04] text-[10px] text-gray-500" title="{{ $f['consequence'] }}">
-                                    {{ $f['label'] }}
-                                    <span class="text-gray-300">·</span>
-                                    <span style="font-family: 'JetBrains Mono', monospace;">{{ $moduleLabel[$f['module']] ?? $f['module'] }}</span>
-                                </span>
+                    {{-- Blocker --}}
+                    @if($blockers->isNotEmpty())
+                        <div class="space-y-1.5">
+                            <div class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--nx-faint)]">Blocker — {{ $blockers->count() }}</div>
+                            @foreach($blockers as $f)
+                                <div class="flex items-start gap-2.5 py-1.5 border-b border-[color:var(--nx-line)] last:border-0">
+                                    <span class="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $f['tier'] === 'draft' ? 'var(--nx-warning)' : 'var(--nx-danger)' }};"></span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="text-xs font-medium text-[color:var(--nx-text)]">{{ $f['label'] }}</span>
+                                            <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-[color:var(--nx-accent-soft)] text-[color:var(--nx-muted)]">{{ $moduleLabel[$f['module']] ?? $f['module'] }} · {{ $nodeLabel[$f['node']] ?? $f['node'] }}</span>
+                                        </div>
+                                        <p class="text-[11px] text-[color:var(--nx-faint)] mt-0.5 leading-snug">{{ $f['consequence'] }}</p>
+                                    </div>
+                                </div>
                             @endforeach
                         </div>
-                    </div>
-                @endif
-            </div>
+                    @else
+                        <div class="flex items-center gap-2 text-xs text-[color:var(--nx-success)] font-medium">
+                            @svg('heroicon-o-check-badge', 'w-4 h-4') Alle Tore erfüllt — go-live- und entwurfsfähig.
+                        </div>
+                    @endif
 
-            {{-- ═══ Rückfragen (inbound) ═══ --}}
-            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)]" style="font-family: 'JetBrains Mono', monospace;">
-                        Rückfragen
-                        @if($this->openQuestions->isNotEmpty())<span class="text-[rgb(var(--ui-warning-rgb))]"> ({{ $this->openQuestions->count() }})</span>@endif
-                    </h2>
-                    <button wire:click="pullQuestions" wire:loading.attr="disabled" class="text-[10px] font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline inline-flex items-center gap-1">
+                    {{-- Ideal-Lücken --}}
+                    @if($idealMissing->isNotEmpty())
+                        <div class="mt-3 pt-3 border-t border-[color:var(--nx-line)]" x-data="{ open: false }">
+                            <button type="button" @click="open = !open" class="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--nx-faint)] hover:text-[color:var(--nx-muted)]">
+                                Weitere Ideal-Lücken · {{ $idealMissing->count() }}
+                                <span class="transition-transform" :class="open ? 'rotate-90' : ''">@svg('heroicon-o-chevron-right', 'w-3 h-3')</span>
+                            </button>
+                            <div x-show="open" x-collapse x-cloak class="mt-2 flex flex-wrap gap-1.5">
+                                @foreach($idealMissing as $f)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[color:var(--nx-accent-soft)] text-[10px] text-[color:var(--nx-muted)]" title="{{ $f['consequence'] }}">
+                                        {{ $f['label'] }}
+                                        <span class="opacity-50">·</span>
+                                        {{ $moduleLabel[$f['module']] ?? $f['module'] }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </x-nx-section>
+            </x-nx-card>
+
+            {{-- ═══ Rückfragen ═══ --}}
+            <x-nx-panel>
+                <x-slot name="actions">
+                    <x-nx-button variant="ghost" size="sm" wire:click="pullQuestions" wire:loading.attr="disabled">
                         @svg('heroicon-o-arrow-down-tray', 'w-3.5 h-3.5') abrufen
-                    </button>
-                </div>
+                    </x-nx-button>
+                </x-slot>
+                <x-slot name="title">Rückfragen@if($this->openQuestions->isNotEmpty()) · {{ $this->openQuestions->count() }}@endif</x-slot>
 
                 @forelse($this->openQuestions as $question)
-                    <div class="border-b border-gray-100 last:border-0 py-3">
+                    <div class="border-b border-[color:var(--nx-line)] last:border-0 py-3 first:pt-0">
                         <div class="flex items-start justify-between gap-2">
-                            <h3 class="text-sm font-medium text-gray-900">{{ $question->title }}</h3>
+                            <h3 class="text-sm font-medium text-[color:var(--nx-text)]">{{ $question->title }}</h3>
                             @if($question->priority === 'high')
-                                <x-ui-badge color="danger" size="xs">Hoch</x-ui-badge>
+                                <x-nx-badge variant="danger">Hoch</x-nx-badge>
                             @endif
                         </div>
                         @if($question->description)
-                            <p class="text-xs text-gray-600 mt-1 whitespace-pre-line leading-relaxed">{{ \Illuminate\Support\Str::limit($question->description, 300) }}</p>
+                            <p class="text-xs text-[color:var(--nx-muted)] mt-1 whitespace-pre-line leading-relaxed">{{ \Illuminate\Support\Str::limit($question->description, 300) }}</p>
                         @endif
 
                         @if($answeringId === $question->id)
                             <div class="mt-2 space-y-2">
-                                <x-ui-input-textarea wire:model="answerText" label="Antwort an FLYNK" rows="3" placeholder="Deine Antwort…" />
+                                <x-nx-input-textarea name="answerText" wire:model="answerText" label="Antwort an FLYNK" rows="3" placeholder="Deine Antwort…" size="sm" />
                                 <div class="flex justify-end gap-2">
-                                    <x-ui-button variant="secondary" size="sm" wire:click="cancelAnswer">Abbrechen</x-ui-button>
-                                    <x-ui-button variant="primary" size="sm" wire:click="submitAnswer">
+                                    <x-nx-button variant="ghost" size="sm" wire:click="cancelAnswer">Abbrechen</x-nx-button>
+                                    <x-nx-button variant="primary" size="sm" wire:click="submitAnswer">
                                         @svg('heroicon-o-paper-airplane', 'w-4 h-4') Senden
-                                    </x-ui-button>
+                                    </x-nx-button>
                                 </div>
                             </div>
                         @else
-                            <button wire:click="startAnswer({{ $question->id }})" class="mt-2 text-xs font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline inline-flex items-center gap-1">
+                            <x-nx-button variant="ghost" size="sm" wire:click="startAnswer({{ $question->id }})" class="mt-2">
                                 @svg('heroicon-o-chat-bubble-left-right', 'w-3.5 h-3.5') Antworten
-                            </button>
+                            </x-nx-button>
                         @endif
                     </div>
                 @empty
-                    <p class="text-xs text-gray-400">Keine offenen Rückfragen — wir sind hier bei nichts am Zug.</p>
+                    <p class="text-xs text-[color:var(--nx-faint)]">Keine offenen Rückfragen — wir sind hier bei nichts am Zug.</p>
                 @endforelse
-            </div>
+            </x-nx-panel>
 
             {{-- ═══ Aufgaben ═══ --}}
             @php
                 $taskMeta = [
-                    'in_progress' => ['#6366f1', 'In Arbeit'],
-                    'planned'     => ['#64748b', 'Geplant'],
-                    'new'         => ['#0ea5e9', 'Neu'],
-                    'review'      => ['#f59e0b', 'Review'],
-                    'suggested'   => ['#94a3b8', 'Vorschlag'],
-                    'on_hold'     => ['#6b7280', 'Pausiert'],
-                    'done'        => ['#10b981', 'Erledigt'],
-                    'rejected'    => ['#ef4444', 'Abgelehnt'],
+                    'in_progress' => ['info', 'In Arbeit'], 'planned' => ['neutral', 'Geplant'],
+                    'new' => ['info', 'Neu'], 'review' => ['warning', 'Review'],
+                    'suggested' => ['neutral', 'Vorschlag'], 'on_hold' => ['neutral', 'Pausiert'],
+                    'done' => ['success', 'Erledigt'], 'rejected' => ['danger', 'Abgelehnt'],
                 ];
                 $typeIcons = [
                     'change' => 'heroicon-o-pencil-square', 'feature_request' => 'heroicon-o-sparkles',
@@ -399,267 +329,212 @@
                 $cReview = ($buckets['review'] ?? collect())->count();
                 $cDone = ($buckets['erledigt'] ?? collect())->count();
                 $cAll = $this->tasks->count();
-                $statusCounts = $this->tasks->groupBy(fn ($t) => $t['status'] ?? 'other')->map->count();
             @endphp
 
             @if($cAll > 0)
-                <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5" x-data="{ tab: '{{ $cOffen > 0 ? 'offen' : 'alle' }}' }">
-                    <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
-                        <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] inline-flex items-center gap-2" style="font-family: 'JetBrains Mono', monospace;">
-                            @svg('heroicon-o-clipboard-document-list', 'w-4 h-4')
-                            Aufgaben
+                <x-nx-panel flush x-data="{ tab: '{{ $cOffen > 0 ? 'offen' : 'alle' }}' }">
+                    <x-slot name="title">Aufgaben</x-slot>
+                    <x-slot name="actions">
+                        <div class="flex items-center gap-2">
                             @if(!empty($flynkMeta['flynk_url']))
-                                <a href="{{ $flynkMeta['flynk_url'] }}" target="_blank" rel="noopener" class="text-[rgb(var(--ui-primary-rgb))] normal-case tracking-normal text-[10px] font-medium hover:underline">in FLYNK öffnen ↗</a>
+                                <a href="{{ $flynkMeta['flynk_url'] }}" target="_blank" rel="noopener" class="text-[color:var(--nx-accent)] text-[11px] font-medium hover:underline">in FLYNK ↗</a>
                             @endif
-                        </h2>
-                        <div class="inline-flex items-center gap-0.5 p-0.5 rounded-xl bg-black/[0.04] text-xs font-semibold">
-                            <button @click="tab='offen'" :class="tab==='offen' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg transition">Offen · {{ $cOffen }}</button>
-                            <button @click="tab='review'" :class="tab==='review' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg transition">Review · {{ $cReview }}</button>
-                            <button @click="tab='erledigt'" :class="tab==='erledigt' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg transition">Erledigt · {{ $cDone }}</button>
-                            <button @click="tab='alle'" :class="tab==='alle' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg transition">Alle · {{ $cAll }}</button>
+                            <div class="inline-flex items-center gap-0.5 p-0.5 rounded-[8px] bg-[color:var(--nx-bg)] text-xs font-medium">
+                                <button @click="tab='offen'" :class="tab==='offen' ? 'bg-[color:var(--nx-surface)] text-[color:var(--nx-text)] shadow-sm' : 'text-[color:var(--nx-faint)]'" class="px-2.5 py-1 rounded-[6px] transition">Offen · {{ $cOffen }}</button>
+                                <button @click="tab='review'" :class="tab==='review' ? 'bg-[color:var(--nx-surface)] text-[color:var(--nx-text)] shadow-sm' : 'text-[color:var(--nx-faint)]'" class="px-2.5 py-1 rounded-[6px] transition">Review · {{ $cReview }}</button>
+                                <button @click="tab='erledigt'" :class="tab==='erledigt' ? 'bg-[color:var(--nx-surface)] text-[color:var(--nx-text)] shadow-sm' : 'text-[color:var(--nx-faint)]'" class="px-2.5 py-1 rounded-[6px] transition">Erledigt · {{ $cDone }}</button>
+                                <button @click="tab='alle'" :class="tab==='alle' ? 'bg-[color:var(--nx-surface)] text-[color:var(--nx-text)] shadow-sm' : 'text-[color:var(--nx-faint)]'" class="px-2.5 py-1 rounded-[6px] transition">Alle · {{ $cAll }}</button>
+                            </div>
                         </div>
-                    </div>
+                    </x-slot>
 
-                    {{-- Status-Verteilung --}}
-                    <div class="flex items-center h-1.5 rounded-full overflow-hidden mb-4 bg-gray-100">
-                        @foreach($statusCounts as $st => $cnt)
-                            <div style="width: {{ $cAll ? round($cnt / $cAll * 100) : 0 }}%; background: {{ $taskMeta[$st][0] ?? '#cbd5e1' }};" title="{{ $st }}: {{ $cnt }}"></div>
-                        @endforeach
-                    </div>
-
-                    {{-- Task-Zeilen --}}
-                    <div>
+                    <ul class="divide-y divide-[color:var(--nx-line)]">
                         @foreach($this->tasks as $t)
                             @php
                                 $st = $t['status'] ?? 'other';
-                                [$stColor, $stLabel] = $taskMeta[$st] ?? ['#94a3b8', $st];
+                                [$stVariant, $stLabel] = $taskMeta[$st] ?? ['neutral', $st];
                                 $bucket = $bucketOf($st);
                             @endphp
-                            <div x-show="tab==='alle' || tab==='{{ $bucket }}'" class="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0 group">
-                                <span class="w-1 self-stretch rounded-full flex-shrink-0" style="background: {{ $stColor }};"></span>
-                                <span class="w-7 h-7 flex-shrink-0 rounded-lg bg-black/[0.04] flex items-center justify-center text-gray-500">
+                            <li x-show="tab==='alle' || tab==='{{ $bucket }}'" class="flex items-center gap-3 px-4 py-2.5">
+                                <span class="w-7 h-7 flex-shrink-0 rounded-[6px] bg-[color:var(--nx-bg)] flex items-center justify-center text-[color:var(--nx-muted)]">
                                     @svg($typeIcons[$t['type']] ?? 'heroicon-o-minus-circle', 'w-4 h-4')
                                 </span>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-2">
-                                        <p class="text-sm font-medium text-gray-900 truncate">{{ $t['title'] }}</p>
+                                        <p class="text-sm text-[color:var(--nx-text)] truncate">{{ $t['title'] }}</p>
                                         @if(($t['priority'] ?? null) === 'high')
-                                            <span class="flex-shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold" style="background: rgba(239,68,68,.12); color: #dc2626;">HOCH</span>
+                                            <x-nx-badge variant="danger">Hoch</x-nx-badge>
                                         @endif
                                     </div>
-                                    <div class="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5" style="font-family: 'JetBrains Mono', monospace;">
+                                    <div class="flex items-center gap-2 text-[11px] text-[color:var(--nx-faint)] mt-0.5">
                                         <span>{{ $t['type'] }}</span>
-                                        @if(!empty($t['assignee']))
-                                            <span class="inline-flex items-center gap-1">
-                                                <span class="text-gray-300">·</span>
-                                                <span class="w-4 h-4 rounded-full bg-[rgb(var(--ui-primary-rgb))] text-white text-[8px] font-bold flex items-center justify-center">{{ mb_substr($t['assignee'], 0, 1) }}</span>
-                                                {{ $t['assignee'] }}
-                                            </span>
-                                        @endif
+                                        @if(!empty($t['assignee']))<span class="opacity-50">·</span><span>{{ $t['assignee'] }}</span>@endif
                                     </div>
                                 </div>
-                                <span class="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold" style="background: {{ $stColor }}1f; color: {{ $stColor }};">{{ $stLabel }}</span>
+                                <x-nx-badge :variant="$stVariant">{{ $stLabel }}</x-nx-badge>
                                 @if(!empty($t['created_at']))
-                                    <span class="flex-shrink-0 text-[10px] text-gray-400 w-11 text-right" style="font-family: 'JetBrains Mono', monospace;">{{ \Illuminate\Support\Carbon::parse($t['created_at'])->format('d.m.') }}</span>
+                                    <span class="flex-shrink-0 text-[10px] text-[color:var(--nx-faint)] w-11 text-right tabular-nums">{{ \Illuminate\Support\Carbon::parse($t['created_at'])->format('d.m.') }}</span>
                                 @endif
-                            </div>
+                            </li>
                         @endforeach
-                        <p x-show="(tab==='offen' && {{ $cOffen }} === 0) || (tab==='review' && {{ $cReview }} === 0) || (tab==='erledigt' && {{ $cDone }} === 0)" x-cloak class="text-xs text-gray-400 py-4 text-center">Keine Aufgaben in dieser Ansicht.</p>
-                    </div>
-                </div>
-            @else
-                <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
-                    <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] inline-flex items-center gap-2 mb-2" style="font-family: 'JetBrains Mono', monospace;">
-                        @svg('heroicon-o-clipboard-document-list', 'w-4 h-4')
-                        Aufgaben
-                    </h2>
-                    <p class="text-xs text-gray-400">Noch keine Aufgaben — sobald FLYNK Tasks anlegt, erscheinen sie hier (Abruf über „Meta aktualisieren").</p>
-                </div>
+                    </ul>
+                    <p x-show="(tab==='offen' && {{ $cOffen }} === 0) || (tab==='review' && {{ $cReview }} === 0) || (tab==='erledigt' && {{ $cDone }} === 0)" x-cloak class="text-xs text-[color:var(--nx-faint)] py-4 text-center">Keine Aufgaben in dieser Ansicht.</p>
+                </x-nx-panel>
             @endif
 
             {{-- ═══ FLYNK-Projekt + Pushes ═══ --}}
             <div class="grid gap-5 @if(!empty($flynkMeta)) md:grid-cols-2 @endif">
 
-                {{-- FLYNK-Projekt --}}
                 @if(!empty($flynkMeta))
-                    <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)]" style="font-family: 'JetBrains Mono', monospace;">FLYNK-Projekt</h2>
-                            @if(!empty($flynkMeta['fetched_at']))
-                                <span class="text-[10px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">
-                                    Stand {{ \Illuminate\Support\Carbon::parse($flynkMeta['fetched_at'])->format('d.m.Y H:i') }}
-                                </span>
-                            @endif
-                        </div>
+                    <x-nx-panel>
+                        <x-slot name="title">FLYNK-Projekt</x-slot>
+                        @if(!empty($flynkMeta['fetched_at']))
+                            <x-slot name="subtitle">Stand {{ \Illuminate\Support\Carbon::parse($flynkMeta['fetched_at'])->format('d.m.Y H:i') }}</x-slot>
+                        @endif
 
-                        {{-- Link-Chips --}}
                         <div class="flex flex-wrap gap-2 mb-4">
                             @if(!empty($flynkMeta['production_url']))
-                                <a href="{{ $flynkMeta['production_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgb(var(--ui-primary-rgb))]/10 text-[rgb(var(--ui-primary-rgb))] text-xs font-medium hover:opacity-80">
-                                    @svg('heroicon-o-globe-alt', 'w-3.5 h-3.5') Website
-                                </a>
+                                <x-nx-badge variant="accent" :href="$flynkMeta['production_url']">@svg('heroicon-o-globe-alt', 'w-3.5 h-3.5') Website</x-nx-badge>
                             @endif
                             @if(!empty($flynkMeta['dev_url']))
-                                <a href="{{ $flynkMeta['dev_url'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/[0.04] text-gray-700 text-xs font-medium hover:bg-black/[0.08]">
-                                    @svg('heroicon-o-beaker', 'w-3.5 h-3.5') Dev / Staging
-                                </a>
+                                <x-nx-badge :href="$flynkMeta['dev_url']">@svg('heroicon-o-beaker', 'w-3.5 h-3.5') Dev / Staging</x-nx-badge>
                             @endif
                             @if(!empty($flynkMeta['github_repo']))
-                                <a href="{{ $flynkMeta['github_repo'] }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/[0.04] text-gray-700 text-xs font-medium hover:bg-black/[0.08]">
-                                    @svg('heroicon-o-code-bracket', 'w-3.5 h-3.5') Repo
-                                </a>
+                                <x-nx-badge :href="$flynkMeta['github_repo']">@svg('heroicon-o-code-bracket', 'w-3.5 h-3.5') Repo</x-nx-badge>
                             @endif
                         </div>
 
-                        <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                        <div class="text-xs">
                             @foreach([
-                                'client_name' => 'Kunde', 'agency' => 'Agentur',
-                                'status' => 'Status', 'flynk_tier' => 'Tier',
-                                'maintenance_interval' => 'Wartung', 'primary_contact' => 'Kontakt',
-                                'timezone' => 'Zeitzone', 'forge_server' => 'Forge-Server',
+                                'client_name' => 'Kunde', 'agency' => 'Agentur', 'status' => 'Status', 'flynk_tier' => 'Tier',
+                                'maintenance_interval' => 'Wartung', 'primary_contact' => 'Kontakt', 'timezone' => 'Zeitzone', 'forge_server' => 'Forge-Server',
                             ] as $key => $label)
                                 @if(!empty($flynkMeta[$key]))
-                                    <div class="flex justify-between gap-2 border-b border-gray-100 py-1">
-                                        <span class="text-gray-500">{{ $label }}</span>
-                                        <span class="font-medium text-gray-800 truncate">{{ $flynkMeta[$key] }}</span>
+                                    <div class="flex justify-between gap-2 border-b border-[color:var(--nx-line)] py-1.5 last:border-0">
+                                        <span class="text-[color:var(--nx-muted)]">{{ $label }}</span>
+                                        <span class="font-medium text-[color:var(--nx-text)] truncate">{{ $flynkMeta[$key] }}</span>
                                     </div>
                                 @endif
                             @endforeach
-                            @if(!empty($flynkMeta['went_live_at']))
-                                <div class="flex justify-between gap-2 border-b border-gray-100 py-1">
-                                    <span class="text-gray-500">Go-Live</span>
-                                    <span class="font-medium text-gray-800">{{ \Illuminate\Support\Carbon::parse($flynkMeta['went_live_at'])->format('d.m.Y') }}</span>
-                                </div>
-                            @elseif(!empty($flynkMeta['go_live_at']))
-                                <div class="flex justify-between gap-2 border-b border-gray-100 py-1">
-                                    <span class="text-gray-500">Go-Live geplant</span>
-                                    <span class="font-medium text-gray-800">{{ \Illuminate\Support\Carbon::parse($flynkMeta['go_live_at'])->format('d.m.Y') }}</span>
+                            @if($goLive)
+                                <div class="flex justify-between gap-2 border-b border-[color:var(--nx-line)] py-1.5 last:border-0">
+                                    <span class="text-[color:var(--nx-muted)]">Go-Live</span>
+                                    <span class="font-medium text-[color:var(--nx-text)] tabular-nums">{{ $goLive }}</span>
                                 </div>
                             @endif
                         </div>
-
-                        @if(!empty($flynkMeta['tasks_by_status']) && is_array($flynkMeta['tasks_by_status']))
-                            <div class="flex flex-wrap gap-1.5 mt-3">
-                                @foreach($flynkMeta['tasks_by_status'] as $st => $cnt)
-                                    @if($cnt > 0)
-                                        <span class="px-2 py-0.5 rounded-full bg-black/[0.04] text-[10px] text-gray-600">{{ $st }}: {{ $cnt }}</span>
-                                    @endif
-                                @endforeach
-                            </div>
-                        @endif
 
                         @if(!empty($flynkMeta['stack']) && is_array($flynkMeta['stack']))
                             <div class="flex flex-wrap gap-1.5 mt-3">
                                 @foreach($flynkMeta['stack'] as $tech)
-                                    <span class="px-2 py-0.5 rounded-full bg-black/[0.04] text-[10px] text-gray-600">{{ $tech }}</span>
+                                    <span class="px-2 py-0.5 rounded-full bg-[color:var(--nx-accent-soft)] text-[10px] text-[color:var(--nx-muted)]">{{ $tech }}</span>
                                 @endforeach
                             </div>
                         @endif
 
                         @if(!empty($flynkMeta['notes']))
-                            <div class="mt-3 pt-3 border-t border-gray-100" x-data="{ open: false }">
-                                <button type="button" @click="open = !open" class="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600">
-                                    @svg('heroicon-o-document-text', 'w-3.5 h-3.5')
-                                    Notizen
+                            <div class="mt-3 pt-3 border-t border-[color:var(--nx-line)]" x-data="{ open: false }">
+                                <button type="button" @click="open = !open" class="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--nx-faint)] hover:text-[color:var(--nx-muted)]">
+                                    @svg('heroicon-o-document-text', 'w-3.5 h-3.5') Notizen
                                     <span class="transition-transform" :class="open ? 'rotate-90' : ''">@svg('heroicon-o-chevron-right', 'w-3 h-3')</span>
                                 </button>
-                                <p x-show="open" x-collapse x-cloak class="mt-2 text-[11px] text-gray-600 whitespace-pre-line leading-relaxed">{{ $flynkMeta['notes'] }}</p>
+                                <p x-show="open" x-collapse x-cloak class="mt-2 text-[11px] text-[color:var(--nx-muted)] whitespace-pre-line leading-relaxed">{{ $flynkMeta['notes'] }}</p>
                             </div>
                         @endif
-                    </div>
+                    </x-nx-panel>
                 @endif
 
-                {{-- Pushes (Timeline) --}}
-                <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
-                    <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-4" style="font-family: 'JetBrains Mono', monospace;">Pushes</h2>
+                {{-- Pushes --}}
+                <x-nx-panel>
+                    <x-slot name="title">Pushes</x-slot>
                     @forelse($this->pushes as $push)
                         @php
+                            $pVariant = in_array($push->status->color(), ['success', 'danger', 'warning', 'info']) ? $push->status->color() : 'neutral';
                             $pIcon = $push->status->value === 'processed' ? 'heroicon-o-check'
                                 : ($push->status->value === 'failed' ? 'heroicon-o-x-mark' : 'heroicon-o-paper-airplane');
                         @endphp
                         <div class="flex gap-3">
                             <div class="flex flex-col items-center">
-                                <span class="w-6 h-6 rounded-full bg-black/[0.04] flex items-center justify-center">
+                                <span class="w-6 h-6 rounded-full bg-[color:var(--nx-bg)] flex items-center justify-center">
                                     @svg($pIcon, 'w-3.5 h-3.5 text-[rgb(var(--ui-' . $push->status->color() . '-rgb))]')
                                 </span>
-                                @unless($loop->last)<span class="w-px flex-1 bg-gray-200 mt-1"></span>@endunless
+                                @unless($loop->last)<span class="w-px flex-1 bg-[color:var(--nx-line)] mt-1"></span>@endunless
                             </div>
                             <div class="flex-1 min-w-0 pb-4">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xs font-semibold text-gray-800">{{ $push->status->label() }}</span>
-                                    <span class="text-[10px] text-gray-400 truncate" style="font-family: 'JetBrains Mono', monospace;">{{ \Illuminate\Support\Str::limit($push->uuid, 12) }}</span>
-                                    <span class="ml-auto text-[10px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">{{ $push->created_at->format('d.m. H:i') }}</span>
+                                    <x-nx-badge :variant="$pVariant">{{ $push->status->label() }}</x-nx-badge>
+                                    <span class="text-[10px] text-[color:var(--nx-faint)] truncate tabular-nums">{{ \Illuminate\Support\Str::limit($push->uuid, 12) }}</span>
+                                    <span class="ml-auto text-[10px] text-[color:var(--nx-faint)] tabular-nums">{{ $push->created_at->format('d.m. H:i') }}</span>
                                 </div>
                                 @php $results = $push->results(); @endphp
                                 @if(!empty($results))
                                     <div class="mt-1 space-y-1">
                                         @foreach($results as $r)
-                                            <a href="{{ $r['url'] ?? '#' }}" @if(!empty($r['url'])) target="_blank" rel="noopener" @endif class="flex items-center gap-1.5 text-[11px] text-gray-600 hover:text-[rgb(var(--ui-primary-rgb))]">
-                                                @svg('heroicon-o-document-text', 'w-3 h-3 text-gray-400 flex-shrink-0')
+                                            <a href="{{ $r['url'] ?? '#' }}" @if(!empty($r['url'])) target="_blank" rel="noopener" @endif class="flex items-center gap-1.5 text-[11px] text-[color:var(--nx-muted)] hover:text-[color:var(--nx-accent)]">
+                                                @svg('heroicon-o-document-text', 'w-3 h-3 text-[color:var(--nx-faint)] flex-shrink-0')
                                                 <span class="truncate">{{ $r['title'] ?? ($r['type'] ?? 'Ergebnis') }}</span>
                                             </a>
                                         @endforeach
                                     </div>
                                 @endif
                                 @if(in_array($push->status->value, ['sent','accepted','processing']))
-                                    <button wire:click="pullFeedback({{ $push->id }})" class="mt-1 text-[10px] font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline">
-                                        Feedback abrufen
-                                    </button>
+                                    <x-nx-button variant="ghost" size="sm" wire:click="pullFeedback({{ $push->id }})" class="mt-1">Feedback abrufen</x-nx-button>
                                 @endif
                             </div>
                         </div>
                     @empty
-                        <p class="text-xs text-gray-400">Noch keine Pushes.</p>
+                        <p class="text-xs text-[color:var(--nx-faint)]">Noch keine Pushes.</p>
                     @endforelse
-                </div>
+                </x-nx-panel>
             </div>
 
             {{-- ═══ Push-Vorschau ═══ --}}
-            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5" x-data="{ open: false }">
+            <x-nx-card x-data="{ open: false }">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)]" style="font-family: 'JetBrains Mono', monospace;">Push-Vorschau</h2>
-                    <button type="button" @click="open = !open" class="text-[10px] font-medium text-[rgb(var(--ui-primary-rgb))] hover:underline">
+                    <h2 class="text-sm font-semibold text-[color:var(--nx-text)]">Push-Vorschau</h2>
+                    <x-nx-button variant="ghost" size="sm" @click="open = !open">
                         <span x-text="open ? 'Ausblenden' : 'JSON anzeigen'"></span>
-                    </button>
+                    </x-nx-button>
                 </div>
-                <p class="text-[11px] text-gray-500 mt-1">Struktur des Envelopes (<code>push</code> + <code>context</code>), den der Connector an FLYNK sendet. Die Kontext-Slices (<code>brand</code>, <code>seo</code>, <code>crm</code>, <code>commerce</code>) liefern die registrierten Quell-Provider pro Knoten.</p>
+                <p class="text-[11px] text-[color:var(--nx-faint)] mt-1">Struktur des Envelopes (<code>push</code> + <code>context</code>), den der Connector an FLYNK sendet. Die Kontext-Slices (<code>brand</code>, <code>seo</code>, <code>crm</code>, <code>commerce</code>) liefern die registrierten Quell-Provider pro Knoten.</p>
                 <div x-show="open" x-collapse x-cloak class="mt-3">
-                    <pre class="text-[10px] leading-relaxed bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto" style="font-family: 'JetBrains Mono', monospace;">{{ $this->pushPreviewJson }}</pre>
+                    <pre class="text-[10px] leading-relaxed bg-[color:var(--nx-bg)] text-[color:var(--nx-text)] border border-[color:var(--nx-line)] rounded-[8px] p-4 overflow-x-auto tabular-nums">{{ $this->pushPreviewJson }}</pre>
                 </div>
-            </div>
+            </x-nx-card>
 
             {{-- ═══ Einstellungen ═══ --}}
-            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
-                <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] mb-4" style="font-family: 'JetBrains Mono', monospace;">Einstellungen</h2>
+            <x-nx-panel>
+                <x-slot name="title">Einstellungen</x-slot>
                 <div class="space-y-4">
-                    <x-ui-input-text wire:model="form.name" label="Name" required />
-                    <x-ui-input-textarea wire:model="form.description" label="Beschreibung" rows="2" />
-                    <x-ui-input-select
+                    <x-nx-input-text name="form.name" wire:model="form.name" label="Name" required size="sm" />
+                    <x-nx-input-textarea name="form.description" wire:model="form.description" label="Beschreibung" rows="2" size="sm" />
+                    <x-nx-input-select
                         name="form.integration_connection_id"
                         wire:model="form.integration_connection_id"
                         label="FLYNK-Verbindung"
                         :options="$this->flynkConnections->pluck('name', 'id')->toArray()"
-                        :nullable="true"
+                        nullable
                         nullLabel="Team-Standard verwenden"
+                        size="sm"
                     />
                 </div>
                 @if($this->isDirty)
-                    <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
-                        <x-ui-button variant="secondary" size="sm" wire:click="loadForm">Abbrechen</x-ui-button>
-                        <x-ui-button variant="primary" size="sm" wire:click="save">Speichern</x-ui-button>
+                    <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-[color:var(--nx-line)]">
+                        <x-nx-button variant="ghost" size="sm" wire:click="loadForm">Abbrechen</x-nx-button>
+                        <x-nx-button variant="primary" size="sm" wire:click="save">Speichern</x-nx-button>
                     </div>
                 @endif
-            </div>
+            </x-nx-panel>
 
             {{-- ═══ Danger zone ═══ --}}
-            <div class="rounded-2xl border border-[rgb(var(--ui-danger-rgb))]/20 bg-[rgb(var(--ui-danger-rgb))]/5 p-5">
-                <h3 class="text-sm font-semibold text-[rgb(var(--ui-danger-rgb))] mb-2">Gefahrenzone</h3>
-                <p class="text-xs text-[color:var(--ui-secondary)] mb-4">Löscht den Container lokal. Ein verbundenes FLYNK-Project bleibt bestehen — melde es vorher ab, wenn es entfernt werden soll.</p>
-                <x-ui-button variant="danger" size="sm" wire:click="delete" wire:confirm="Container wirklich löschen?">
-                    @svg('heroicon-o-trash', 'w-4 h-4')
-                    Container löschen
-                </x-ui-button>
-            </div>
+            <x-nx-callout variant="danger" title="Gefahrenzone">
+                Löscht den Container lokal. Ein verbundenes FLYNK-Project bleibt bestehen — melde es vorher ab, wenn es entfernt werden soll.
+                <x-slot name="action">
+                    <x-nx-button variant="danger" size="sm" wire:click="delete" wire:confirm="Container wirklich löschen?">
+                        @svg('heroicon-o-trash', 'w-4 h-4') Container löschen
+                    </x-nx-button>
+                </x-slot>
+            </x-nx-callout>
         </div>
     </x-ui-page-container>
 </x-ui-page>
