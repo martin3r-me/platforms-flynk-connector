@@ -28,12 +28,9 @@
     @if($hasChildren)
         <div x-show="open" x-collapse class="flex flex-col ml-3">
             @foreach($node['children_by_type'] as $typeGroup)
-                <div wire:key="entity-{{ $node['entity_id'] }}-type-{{ $typeGroup['type_id'] }}" class="flex flex-col">
-                    <div class="text-[9px] uppercase tracking-wider text-gray-600 pl-3 mt-1 mb-0.5">{{ $typeGroup['type_name'] }}</div>
-                    @foreach($typeGroup['children'] as $child)
-                        @include('flynk-connector::livewire.partials.sidebar-entity-node', ['node' => $child, 'depth' => $depth + 1])
-                    @endforeach
-                </div>
+                @foreach($typeGroup['children'] as $child)
+                    @include('flynk-connector::livewire.partials.sidebar-entity-node', ['node' => $child, 'depth' => $depth + 1])
+                @endforeach
             @endforeach
         </div>
     @endif

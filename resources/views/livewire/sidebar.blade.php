@@ -42,12 +42,9 @@
         <div class="px-2 mb-1 text-[9px] uppercase tracking-widest text-gray-600 font-medium">Nach Knoten</div>
 
         @foreach($entityTypeGroups as $typeGroup)
-            <div wire:key="type-group-{{ $typeGroup['type_id'] }}" class="mb-2">
-                <div class="px-2 mb-0.5 text-[9px] uppercase tracking-widest text-gray-600 font-medium">{{ $typeGroup['type_name'] }}</div>
-                @foreach($typeGroup['entities'] as $node)
-                    @include('flynk-connector::livewire.partials.sidebar-entity-node', ['node' => $node])
-                @endforeach
-            </div>
+            @foreach($typeGroup['entities'] as $node)
+                @include('flynk-connector::livewire.partials.sidebar-entity-node', ['node' => $node])
+            @endforeach
         @endforeach
 
         {{-- Nicht verortet — als Filter, nicht als Container-Liste --}}
