@@ -104,6 +104,21 @@ class FlynkContainerService
                 'last_synced_at' => now(),
             ]);
 
+            // WICHTIG: Ein bestehendes FLYNK-Project trägt eine fremde/leere external_reference.
+            // Der Kontext-Push sendet aber external_reference = Container-UUID; ohne Angleich
+            // lehnt FLYNK jeden Push mit "external_reference does not match" ab. Darum die
+            // Referenz (via buildPayload) beim Verknüpfen sofort ans Project schreiben.
+            // Best-effort: schlägt es fehl, bleibt der Link bestehen — nachholbar via "Projektfelder".
+            try {
+                $this->api->updateProject($connection, $externalId, $this->buildPayload($container));
+            } catch (FlynkApiException $e) {
+                Log::warning('FlynkConnector: external_reference beim Verknüpfen nicht gesetzt', [
+                    'container_id' => $container->id,
+                    'external_id'  => $externalId,
+                    'error'        => $e->getMessage(),
+                ]);
+            }
+
             $this->logEvent($container, 'linked', 'Mit FLYNK verknüpft', "Bestehendes FLYNK-Project {$externalId} verknüpft.", $response);
         } catch (FlynkApiException $e) {
             $this->handleError($container, 'Verknüpfen fehlgeschlagen', $e);
