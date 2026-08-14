@@ -230,6 +230,104 @@
                 </div>
             </div>
 
+            {{-- ═══ Füllgrad (FLYNK-Anforderungsprofil) ═══ --}}
+            @php
+                $comp     = $this->completeness;
+                $gates    = $comp['gates'];
+                $score    = $comp['score'];
+                $fields   = collect($comp['fields']);
+                $missing  = $fields->where('satisfied', false);
+                $blockers = $missing->whereIn('tier', ['required', 'publishable', 'draft'])
+                    ->sortBy(fn ($f) => ['required' => 0, 'publishable' => 1, 'draft' => 2][$f['tier']] ?? 9)->values();
+                $idealMissing = $missing->where('tier', 'ideal')->values();
+                $moduleLabel = ['brand' => 'Brand', 'seo' => 'SEO', 'crm' => 'CRM', 'commerce' => 'Commerce', 'connector' => 'Connector', '—' => 'ohne Quelle'];
+                $nodeLabel   = ['self' => 'Website-Knoten', 'customer' => 'Kunden-Knoten', '—' => '—'];
+                $scoreCirc   = 126; $scoreOffset = $scoreCirc - ($scoreCirc * $score / 100);
+            @endphp
+
+            <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
+                <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
+                    <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--ui-text)] inline-flex items-center gap-2" style="font-family: 'JetBrains Mono', monospace;">
+                        @svg('heroicon-o-clipboard-document-check', 'w-4 h-4')
+                        Füllgrad
+                        <span class="normal-case tracking-normal text-[10px] font-medium text-gray-400">gegen FLYNK-Anforderungsprofil</span>
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <svg width="34" height="34" viewBox="0 0 50 50" class="flex-shrink-0">
+                            <circle cx="25" cy="25" r="20" fill="none" stroke="#E5E7EB" stroke-width="6"/>
+                            <circle cx="25" cy="25" r="20" fill="none" stroke="rgb(var(--ui-primary-rgb))" stroke-width="6" stroke-linecap="round"
+                                    stroke-dasharray="{{ $scoreCirc }}" stroke-dashoffset="{{ $scoreOffset }}" transform="rotate(-90 25 25)"
+                                    style="transition: stroke-dashoffset .6s ease;" />
+                        </svg>
+                        <div class="leading-tight">
+                            <div class="text-lg font-bold" style="font-family: 'JetBrains Mono', monospace;">{{ $score }}%</div>
+                            <div class="text-[10px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Ideal {{ $comp['ideal']['done'] }}/{{ $comp['ideal']['total'] }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Tore --}}
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    @foreach($gates as $tier => $g)
+                        @php
+                            $passed = $g['passed'];
+                            [$bg, $fg] = $passed
+                                ? ['rgba(16,185,129,.12)', '#059669']
+                                : ($tier === 'draft' ? ['rgba(245,158,11,.12)', '#d97706'] : ['rgba(239,68,68,.10)', '#dc2626']);
+                        @endphp
+                        <div class="flex items-center gap-2 px-3 py-2 rounded-xl" style="background: {{ $bg }};">
+                            @svg($passed ? 'heroicon-o-check-circle' : 'heroicon-o-exclamation-circle', 'w-4 h-4 flex-shrink-0', ['style' => "color: {$fg}"])
+                            <div class="min-w-0">
+                                <div class="text-[11px] font-semibold truncate" style="color: {{ $fg }};">{{ $g['label'] }}</div>
+                                <div class="text-[10px]" style="color: {{ $fg }}; opacity:.75; font-family: 'JetBrains Mono', monospace;">{{ $g['done'] }}/{{ $g['total'] }}</div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Blocker (Arbeitsauftrag) --}}
+                @if($blockers->isNotEmpty())
+                    <div class="space-y-1.5">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">Blocker — {{ $blockers->count() }}</div>
+                        @foreach($blockers as $f)
+                            <div class="flex items-start gap-2.5 py-1.5 border-b border-gray-100 last:border-0">
+                                <span class="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style="background: {{ $f['tier'] === 'draft' ? '#d97706' : '#dc2626' }};"></span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-xs font-medium text-gray-900">{{ $f['label'] }}</span>
+                                        <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-black/[0.05] text-gray-500" style="font-family: 'JetBrains Mono', monospace;">{{ $moduleLabel[$f['module']] ?? $f['module'] }} · {{ $nodeLabel[$f['node']] ?? $f['node'] }}</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-500 mt-0.5 leading-snug">{{ $f['consequence'] }}</p>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="flex items-center gap-2 text-xs text-[rgb(var(--ui-success-rgb))] font-medium">
+                        @svg('heroicon-o-check-badge', 'w-4 h-4') Alle Tore erfüllt — go-live- und entwurfsfähig.
+                    </div>
+                @endif
+
+                {{-- Weitere Ideal-Lücken --}}
+                @if($idealMissing->isNotEmpty())
+                    <div class="mt-3 pt-3 border-t border-gray-100" x-data="{ open: false }">
+                        <button type="button" @click="open = !open" class="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600" style="font-family: 'JetBrains Mono', monospace;">
+                            Weitere Ideal-Lücken · {{ $idealMissing->count() }}
+                            <span class="transition-transform" :class="open ? 'rotate-90' : ''">@svg('heroicon-o-chevron-right', 'w-3 h-3')</span>
+                        </button>
+                        <div x-show="open" x-collapse x-cloak class="mt-2 flex flex-wrap gap-1.5">
+                            @foreach($idealMissing as $f)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/[0.04] text-[10px] text-gray-500" title="{{ $f['consequence'] }}">
+                                    {{ $f['label'] }}
+                                    <span class="text-gray-300">·</span>
+                                    <span style="font-family: 'JetBrains Mono', monospace;">{{ $moduleLabel[$f['module']] ?? $f['module'] }}</span>
+                                </span>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
+
             {{-- ═══ Rückfragen (inbound) ═══ --}}
             <div class="rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5">
                 <div class="flex items-center justify-between mb-3">
@@ -524,7 +622,7 @@
                         <span x-text="open ? 'Ausblenden' : 'JSON anzeigen'"></span>
                     </button>
                 </div>
-                <p class="text-[11px] text-gray-500 mt-1">Struktur des Envelopes (<code>push</code> + <code>context</code>), den der Connector an FLYNK sendet. Der <code>context.brand</code>-Block ist derzeit ein Beispiel und wird ab dem Brands-Port real gefüllt.</p>
+                <p class="text-[11px] text-gray-500 mt-1">Struktur des Envelopes (<code>push</code> + <code>context</code>), den der Connector an FLYNK sendet. Die Kontext-Slices (<code>brand</code>, <code>seo</code>, <code>crm</code>, <code>commerce</code>) liefern die registrierten Quell-Provider pro Knoten.</p>
                 <div x-show="open" x-collapse x-cloak class="mt-3">
                     <pre class="text-[10px] leading-relaxed bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto" style="font-family: 'JetBrains Mono', monospace;">{{ $this->pushPreviewJson }}</pre>
                 </div>

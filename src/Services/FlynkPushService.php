@@ -2,6 +2,7 @@
 
 namespace Platform\FlynkConnector\Services;
 
+use Platform\FlynkConnector\Completeness\FlynkCompletenessEngine;
 use Platform\FlynkConnector\Enums\FlynkPushStatus;
 use Platform\FlynkConnector\Models\FlynkContainer;
 use Platform\FlynkConnector\Models\FlynkContainerEvent;
@@ -23,6 +24,7 @@ class FlynkPushService
     public function __construct(
         protected FlynkContainerService $containers,
         protected FlynkApiService $api,
+        protected FlynkCompletenessEngine $completeness,
     ) {}
 
     /**
@@ -76,9 +78,24 @@ class FlynkPushService
                 'last_error' => null,
             ])->save();
 
-            $container->update(['last_synced_at' => now()]);
+            // Füllgrad-Snapshot mitschreiben (Trend). Kontext liegt bereits vor —
+            // nur die project-Slice fürs REQUIRED-Tor ergänzen.
+            $snapshot = $this->completeness->evaluate($context + [
+                'project' => ['name' => $container->name, 'external_reference' => $container->uuid],
+            ])->toArray();
 
-            $this->logEvent($container, 'pushed', 'Kontext gepusht', "Push {$push->uuid} gesendet.", ['push_uuid' => $push->uuid]);
+            $metadata = $container->metadata ?? [];
+            $metadata['completeness'] = [
+                'stage' => $snapshot['stage'],
+                'score' => $snapshot['score'],
+                'gates' => $snapshot['gates'],
+                'ideal' => $snapshot['ideal'],
+                'at'    => now()->toIso8601String(),
+            ];
+
+            $container->update(['metadata' => $metadata, 'last_synced_at' => now()]);
+
+            $this->logEvent($container, 'pushed', 'Kontext gepusht', "Push {$push->uuid} gesendet (Füllgrad {$snapshot['score']}%).", ['push_uuid' => $push->uuid]);
         } catch (FlynkApiException $e) {
             $push->update(['status' => FlynkPushStatus::FAILED, 'response' => $e->toArray()]);
 

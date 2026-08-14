@@ -8,6 +8,7 @@ use Livewire\Component;
 use Platform\FlynkConnector\Enums\FlynkContainerStatus;
 use Platform\FlynkConnector\Models\FlynkContainer;
 use Platform\FlynkConnector\Models\FlynkQuestion;
+use Platform\FlynkConnector\Completeness\FlynkCompletenessEngine;
 use Platform\FlynkConnector\Services\FlynkContainerService;
 use Platform\FlynkConnector\Services\FlynkPushService;
 use Platform\FlynkConnector\Services\FlynkQuestionService;
@@ -65,6 +66,13 @@ class Show extends Component
     public function events()
     {
         return $this->container->events()->with('user')->orderByDesc('created_at')->take(30)->get();
+    }
+
+    /** Füllgrad gegen das FLYNK-Anforderungsprofil (Tore + Ideal-Score + Lücken). */
+    #[Computed]
+    public function completeness(): array
+    {
+        return app(FlynkCompletenessEngine::class)->forContainer($this->container)->toArray();
     }
 
     /** Pretty-JSON der Push-Vorschau (Envelope inkl. push-Block), zum Weitergeben an FLYNK. */
@@ -298,7 +306,7 @@ class Show extends Component
     protected function refreshState(): void
     {
         $this->container->refresh()->load(['connection', 'user']);
-        unset($this->events, $this->pushes, $this->tasks);
+        unset($this->events, $this->pushes, $this->tasks, $this->completeness);
         $this->loadForm();
     }
 
