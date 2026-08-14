@@ -6,28 +6,28 @@
     <x-slot name="actionbar">
         <x-ui-page-actionbar :breadcrumbs="[['label' => 'FLYNK Container']]">
             <x-slot name="left">
-                <x-ui-input-select
+                <x-nx-input-select
                     wire:key="filter-status"
                     name="statusFilter"
                     :options="collect(\Platform\FlynkConnector\Enums\FlynkContainerStatus::cases())->mapWithKeys(fn($s) => [$s->value => $s->label()])->toArray()"
                     wire:model.live="statusFilter"
-                    :nullable="true"
+                    nullable
                     nullLabel="Alle Status"
-                    size="xs"
+                    size="sm"
                 />
             </x-slot>
 
-            <x-ui-button variant="primary" size="sm" wire:click="create">
+            <x-nx-button variant="primary" size="sm" wire:click="create">
                 @svg('heroicon-o-plus', 'w-4 h-4')
                 <span>Neuer Container</span>
-            </x-ui-button>
+            </x-nx-button>
         </x-ui-page-actionbar>
     </x-slot>
 
     <x-slot name="sidebar">
         <x-ui-page-sidebar title="Suche" width="w-72" :defaultOpen="true" side="left">
             <div class="p-4">
-                <x-ui-input-text wire:model.live.debounce.300ms="search" placeholder="Name, Beschreibung..." size="sm" />
+                <x-nx-input-text name="search" wire:model.live.debounce.300ms="search" placeholder="Name, Beschreibung..." size="sm" />
             </div>
         </x-ui-page-sidebar>
     </x-slot>
@@ -36,27 +36,25 @@
     <x-slot name="activity">
         <x-ui-page-sidebar title="Aktivität" icon="heroicon-o-bolt" width="w-80" :defaultOpen="false" storeKey="activityOpen" side="right">
             <div class="p-4 space-y-3">
-                <div class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--ui-muted)]">Letzte Ereignisse</div>
+                <div class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--nx-muted)]">Letzte Ereignisse</div>
                 @forelse($this->recentActivity as $event)
-                    <a href="{{ route('flynk-connector.containers.show', $event->flynk_container_id) }}" class="flex gap-2.5 text-xs group">
+                    <a href="{{ route('flynk-connector.containers.show', $event->flynk_container_id) }}" wire:navigate class="flex gap-2.5 text-xs group">
                         <div class="flex-shrink-0 mt-0.5">
                             @svg($event->icon(), 'w-4 h-4 text-[rgb(var(--ui-' . $event->color() . '-rgb))]')
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="font-medium text-gray-900 truncate group-hover:text-[rgb(var(--ui-primary-rgb))] transition-colors">{{ $event->title }}</p>
+                            <p class="font-medium text-[color:var(--nx-text)] truncate group-hover:text-[color:var(--nx-accent)] transition-colors">{{ $event->title }}</p>
                             @if($event->container)
-                                <p class="text-[10px] text-gray-400 truncate">{{ $event->container->name }}</p>
+                                <p class="text-[10px] text-[color:var(--nx-muted)] truncate">{{ $event->container->name }}</p>
                             @endif
-                            <div class="flex items-center gap-2 text-gray-400 mt-0.5">
-                                <span style="font-family: 'JetBrains Mono', monospace;">{{ $event->created_at->format('d.m. H:i') }}</span>
-                                @if($event->user)
-                                    <span>&middot; {{ $event->user->name }}</span>
-                                @endif
+                            <div class="flex items-center gap-2 text-[color:var(--nx-faint)] mt-0.5 tabular-nums">
+                                <span>{{ $event->created_at->format('d.m. H:i') }}</span>
+                                @if($event->user)<span>&middot; {{ $event->user->name }}</span>@endif
                             </div>
                         </div>
                     </a>
                 @empty
-                    <p class="text-xs text-gray-400 text-center py-4">Noch keine Aktivität.</p>
+                    <p class="text-xs text-[color:var(--nx-faint)] text-center py-4">Noch keine Aktivität.</p>
                 @endforelse
             </div>
         </x-ui-page-sidebar>
@@ -65,147 +63,175 @@
     {{-- Main content --}}
     <x-ui-page-container>
         <div class="pt-6">
-            @if($this->containers->isEmpty())
-                <div class="flex flex-col items-center justify-center py-16 text-center">
-                    @svg('heroicon-o-arrows-right-left', 'w-12 h-12 text-gray-300 mb-4')
-                    <h3 class="text-sm font-semibold text-gray-900 mb-1">Keine Container</h3>
-                    <p class="text-xs text-gray-500 mb-4">Lege einen Container an und verbinde ihn mit einem FLYNK-Project.</p>
-                    <x-ui-button variant="primary" size="sm" wire:click="create">
-                        @svg('heroicon-o-plus', 'w-4 h-4')
-                        Neuer Container
-                    </x-ui-button>
-                </div>
-            @else
-                <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    @foreach($this->containers as $container)
-                        @php
-                            $m = $container->metadata['flynk'] ?? [];
-                            $nodes = implode(', ', $this->entityNamesByContainer[$container->id] ?? []);
-                            $cc = $m['context_completeness'] ?? null;
-                            $ccPct = $cc !== null ? (int) round((float) $cc * (($cc <= 1) ? 100 : 1)) : null;
-                            $openTasks = $m['open_tasks'] ?? null;
-                        @endphp
-                        <a href="{{ route('flynk-connector.containers.show', $container) }}"
-                           class="group relative block overflow-hidden rounded-2xl border border-black/5 bg-white/70 backdrop-blur-sm p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                            <span class="absolute left-0 top-0 h-full w-1 bg-[rgb(var(--ui-{{ $container->status->color() }}-rgb))]"></span>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <h3 class="font-bold text-[15px] text-gray-900 truncate group-hover:text-gray-700 transition-colors">{{ $container->name }}</h3>
-                                    <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-gray-400" style="font-family: 'JetBrains Mono', monospace;">
-                                        @svg('heroicon-o-link', 'w-3 h-3 flex-shrink-0')
-                                        <span class="truncate">{{ $container->external_id ? \Illuminate\Support\Str::limit($container->external_id, 18) : 'nicht verbunden' }}</span>
-                                    </div>
-                                </div>
-                                <x-ui-badge :color="$container->status->color()" size="xs">{{ $container->status->label() }}</x-ui-badge>
-                            </div>
-
-                            <div class="flex items-center gap-1.5 mt-3 text-xs text-gray-600">
-                                @svg('heroicon-o-building-office', 'w-4 h-4 flex-shrink-0 text-gray-400')
-                                <span class="truncate">{{ $nodes ?: 'Kein Knoten' }}</span>
-                            </div>
-
+            <x-nx-card flush>
+                <x-nx-table>
+                    <x-nx-table-header>
+                        <x-nx-table-header-cell>Name</x-nx-table-header-cell>
+                        <x-nx-table-header-cell>Knoten</x-nx-table-header-cell>
+                        <x-nx-table-header-cell>Status</x-nx-table-header-cell>
+                        <x-nx-table-header-cell align="center">Aufgaben</x-nx-table-header-cell>
+                        <x-nx-table-header-cell>Füllgrad</x-nx-table-header-cell>
+                        <x-nx-table-header-cell align="right">Letzter Sync</x-nx-table-header-cell>
+                        <x-nx-table-header-cell align="right"></x-nx-table-header-cell>
+                    </x-nx-table-header>
+                    <x-nx-table-body>
+                        @forelse($this->containers as $container)
                             @php
-                                $wh = $m['website_health'] ?? null;
-                                $whMap = ['healthy' => ['success', 'Gesund'], 'warning' => ['warning', 'Warnung'], 'critical' => ['danger', 'Kritisch']];
-                                [$whColor, $whLabel] = $whMap[$wh] ?? [null, null];
+                                $m = $container->metadata['flynk'] ?? [];
+                                $nodes = implode(', ', $this->entityNamesByContainer[$container->id] ?? []);
+                                $cc = $m['context_completeness'] ?? null;
+                                $ccPct = $cc !== null ? (int) round((float) $cc * (($cc <= 1) ? 100 : 1)) : null;
+                                $openTasks = $m['open_tasks'] ?? null;
+                                $totalTasks = $m['total_tasks'] ?? null;
+                                $statusColor = $container->status->color();
+                                $statusVariant = in_array($statusColor, ['success', 'danger', 'warning', 'info']) ? $statusColor : 'neutral';
                             @endphp
-                            @if($openTasks !== null || !empty($m['dev_url']) || $whColor)
-                                <div class="flex flex-wrap items-center gap-2 mt-3">
-                                    @if($openTasks !== null)
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium {{ $openTasks > 0 ? 'bg-[rgb(var(--ui-primary-rgb))]/10 text-[rgb(var(--ui-primary-rgb))]' : 'bg-black/[0.04] text-gray-500' }}">
-                                            @svg('heroicon-o-clipboard-document-check', 'w-3.5 h-3.5')
-                                            {{ $openTasks }}@if(($m['total_tasks'] ?? null) !== null)/{{ $m['total_tasks'] }}@endif offene Aufgaben
-                                        </span>
-                                    @endif
-                                    @if($whColor)
-                                        <x-ui-badge :color="$whColor" size="xs">{{ $whLabel }}</x-ui-badge>
-                                    @endif
-                                    @if(!empty($m['dev_url']))
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/[0.04] text-gray-700 text-xs font-medium">
-                                            @svg('heroicon-o-beaker', 'w-3.5 h-3.5') Dev / Staging
-                                        </span>
-                                    @endif
-                                </div>
-                            @endif
+                            <x-nx-table-row>
+                                {{-- Name + FLYNK-Referenz --}}
+                                <x-nx-table-cell>
+                                    <a href="{{ route('flynk-connector.containers.show', $container) }}" wire:navigate
+                                       class="font-medium text-[color:var(--nx-text)] hover:text-[color:var(--nx-accent)] hover:underline">
+                                        {{ $container->name }}
+                                    </a>
+                                    <div class="text-[11px] text-[color:var(--nx-faint)] tabular-nums truncate">
+                                        {{ $container->external_id ? \Illuminate\Support\Str::limit($container->external_id, 20) : 'nicht verbunden' }}
+                                    </div>
+                                </x-nx-table-cell>
 
-                            <div class="mt-4 pt-3 border-t border-gray-100">
-                                @if($ccPct !== null)
-                                    <div class="flex items-center justify-between text-[10px] text-gray-400 mb-1">
-                                        <span class="uppercase tracking-wider" style="font-family: 'JetBrains Mono', monospace;">Context</span>
-                                        <span style="font-family: 'JetBrains Mono', monospace;">{{ $ccPct }}%</span>
-                                    </div>
-                                    <div class="h-1.5 rounded-full bg-black/[0.06] overflow-hidden">
-                                        <div class="h-full rounded-full bg-[rgb(var(--ui-primary-rgb))]" style="width: {{ max(2, min(100, $ccPct)) }}%;"></div>
-                                    </div>
-                                @endif
-                                @if($container->last_synced_at)
-                                    <div class="flex items-center gap-1.5 mt-2 text-[11px] text-gray-400">
-                                        @svg('heroicon-o-clock', 'w-3 h-3 flex-shrink-0')
-                                        <span style="font-family: 'JetBrains Mono', monospace;">Sync {{ $container->last_synced_at->diffForHumans() }}</span>
-                                    </div>
-                                @endif
-                            </div>
-                        </a>
-                    @endforeach
-                </div>
-            @endif
+                                {{-- Verortung --}}
+                                <x-nx-table-cell>
+                                    @if($nodes)
+                                        <span class="inline-flex items-center gap-1.5 text-[color:var(--nx-muted)]">
+                                            @svg('heroicon-o-building-office', 'w-3.5 h-3.5 flex-shrink-0 opacity-60')
+                                            <span class="truncate">{{ $nodes }}</span>
+                                        </span>
+                                    @else
+                                        <span class="text-[color:var(--nx-faint)]">—</span>
+                                    @endif
+                                </x-nx-table-cell>
+
+                                {{-- Status --}}
+                                <x-nx-table-cell>
+                                    <x-nx-badge :variant="$statusVariant" dot>{{ $container->status->label() }}</x-nx-badge>
+                                </x-nx-table-cell>
+
+                                {{-- Aufgaben --}}
+                                <x-nx-table-cell align="center">
+                                    @if($openTasks !== null)
+                                        <span class="tabular-nums {{ $openTasks > 0 ? 'text-[color:var(--nx-text)]' : 'text-[color:var(--nx-faint)]' }}">
+                                            {{ $openTasks }}@if($totalTasks !== null)<span class="text-[color:var(--nx-faint)]">/{{ $totalTasks }}</span>@endif
+                                        </span>
+                                    @else
+                                        <span class="text-[color:var(--nx-faint)]">—</span>
+                                    @endif
+                                </x-nx-table-cell>
+
+                                {{-- Füllgrad (FLYNK context_completeness) --}}
+                                <x-nx-table-cell>
+                                    @if($ccPct !== null)
+                                        <div class="flex items-center gap-2">
+                                            <div class="h-1.5 w-16 rounded-full bg-[color:var(--nx-line)] overflow-hidden">
+                                                <div class="h-full rounded-full bg-[color:var(--nx-accent)]" style="width: {{ max(3, min(100, $ccPct)) }}%;"></div>
+                                            </div>
+                                            <span class="text-[11px] tabular-nums text-[color:var(--nx-muted)]">{{ $ccPct }}%</span>
+                                        </div>
+                                    @else
+                                        <span class="text-[color:var(--nx-faint)]">—</span>
+                                    @endif
+                                </x-nx-table-cell>
+
+                                {{-- Letzter Sync --}}
+                                <x-nx-table-cell align="right">
+                                    <span class="text-[color:var(--nx-muted)] tabular-nums">{{ $container->last_synced_at?->diffForHumans() ?? '—' }}</span>
+                                </x-nx-table-cell>
+
+                                {{-- Aktionen --}}
+                                <x-nx-table-cell align="right">
+                                    <x-nx-button variant="ghost" size="sm" icon wire:click="delete({{ $container->id }})" wire:confirm="Container '{{ $container->name }}' wirklich löschen?">
+                                        @svg('heroicon-o-trash', 'w-4 h-4')
+                                    </x-nx-button>
+                                </x-nx-table-cell>
+                            </x-nx-table-row>
+                        @empty
+                            <x-nx-table-row>
+                                <x-nx-table-cell colspan="7">
+                                    <x-nx-empty icon="heroicon-o-arrows-right-left">
+                                        Keine Container — lege einen an und verbinde ihn mit einem FLYNK-Project.
+                                        <x-slot name="action">
+                                            <x-nx-button variant="primary" size="sm" wire:click="create">
+                                                @svg('heroicon-o-plus', 'w-4 h-4') Neuer Container
+                                            </x-nx-button>
+                                        </x-slot>
+                                    </x-nx-empty>
+                                </x-nx-table-cell>
+                            </x-nx-table-row>
+                        @endforelse
+                    </x-nx-table-body>
+                </x-nx-table>
+            </x-nx-card>
         </div>
     </x-ui-page-container>
 
     {{-- Create Modal --}}
-    <x-ui-modal wire:model="modalShow" title="Neuer Container">
+    <x-nx-modal size="md" wire:model="modalShow">
+        <x-slot name="header">Neuer Container</x-slot>
         <form wire:submit="store" class="space-y-4">
-            <x-ui-input-text wire:model="form.name" label="Name" required />
-            <x-ui-input-textarea wire:model="form.description" label="Beschreibung" rows="2" />
+            <x-nx-input-text name="form.name" wire:model="form.name" label="Name" required size="sm" />
+            <x-nx-input-textarea name="form.description" wire:model="form.description" label="Beschreibung" rows="2" size="sm" />
 
-            <p class="text-[11px] text-gray-400">Die Verortung am Organisations-Knoten erfolgt anschließend im Container-Detail.</p>
+            <p class="text-[11px] text-[color:var(--nx-faint)]">Die Verortung am Organisations-Knoten erfolgt anschließend im Container-Detail.</p>
 
-            <x-ui-input-select
+            <x-nx-input-select
                 name="form.integration_connection_id"
                 wire:model="form.integration_connection_id"
                 label="FLYNK-Verbindung"
                 :options="$this->flynkConnections->pluck('name', 'id')->toArray()"
-                :nullable="true"
+                nullable
                 nullLabel="Team-Standard verwenden"
+                size="sm"
             />
 
-            <x-ui-input-select
+            <x-nx-input-select
                 name="form.link_mode"
                 wire:model.live="form.link_mode"
                 label="Modus"
                 :options="['create' => 'Neues FLYNK-Project anlegen', 'link' => 'Bestehendes verknüpfen']"
+                size="sm"
             />
 
             @if($form['link_mode'] === 'link')
-                <div class="rounded-lg border border-black/5 bg-black/[0.02] p-3 space-y-2">
+                <div class="rounded-[8px] border border-[color:var(--nx-line)] bg-[color:var(--nx-bg)] p-3 space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-medium text-gray-600">FLYNK-Project</span>
-                        <x-ui-button variant="secondary" size="xs" wire:click="loadProjects" type="button">
+                        <span class="text-xs font-medium text-[color:var(--nx-muted)]">FLYNK-Project</span>
+                        <x-nx-button variant="secondary" size="sm" wire:click="loadProjects" type="button">
                             @svg('heroicon-o-arrow-down-tray', 'w-3.5 h-3.5')
                             Aus FLYNK laden
-                        </x-ui-button>
+                        </x-nx-button>
                     </div>
 
                     @if(!empty($availableProjects))
-                        <x-ui-input-select
+                        <x-nx-input-select
                             name="form.external_id"
                             wire:model="form.external_id"
                             label="Verfügbare Projects"
                             :options="collect($availableProjects)->pluck('name', 'id')->toArray()"
-                            :nullable="true"
+                            nullable
                             nullLabel="— wählen —"
+                            size="sm"
                         />
                     @endif
 
-                    <x-ui-input-text wire:model="form.external_id" label="Project-UUID" placeholder="oder UUID direkt einfügen" />
+                    <x-nx-input-text name="form.external_id" wire:model="form.external_id" label="Project-UUID" placeholder="oder UUID direkt einfügen" size="sm" />
                 </div>
             @endif
-
-            <div class="flex justify-end gap-2">
-                <x-ui-button variant="secondary" size="sm" wire:click="$set('modalShow', false)" type="button">Abbrechen</x-ui-button>
-                <x-ui-button variant="primary" size="sm" type="submit">Erstellen</x-ui-button>
-            </div>
         </form>
-    </x-ui-modal>
+
+        <x-slot name="footer">
+            <x-nx-button variant="ghost" size="sm" wire:click="$set('modalShow', false)" type="button">Abbrechen</x-nx-button>
+            <x-nx-button variant="primary" size="sm" wire:click="store">
+                @svg('heroicon-o-check', 'w-4 h-4')
+                <span>Erstellen</span>
+            </x-nx-button>
+        </x-slot>
+    </x-nx-modal>
 </x-ui-page>
