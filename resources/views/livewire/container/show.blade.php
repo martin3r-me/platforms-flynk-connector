@@ -272,7 +272,7 @@
                         @svg('heroicon-o-arrow-down-tray', 'w-3.5 h-3.5') abrufen
                     </x-nx-button>
                 </x-slot>
-                <x-slot name="title">Rückfragen@if($this->openQuestions->isNotEmpty()) · {{ $this->openQuestions->count() }}@endif</x-slot>
+                <x-slot name="title">Rückfragen{{ $this->openQuestions->isNotEmpty() ? ' · '.$this->openQuestions->count() : '' }}</x-slot>
 
                 @forelse($this->openQuestions as $question)
                     <div class="border-b border-[color:var(--nx-line)] last:border-0 py-3 first:pt-0">
