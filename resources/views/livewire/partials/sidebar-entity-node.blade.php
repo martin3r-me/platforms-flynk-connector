@@ -26,7 +26,7 @@
     </div>
 
     @if($expandable)
-        <div x-show="open" x-collapse class="flex flex-col ml-3 border-l border-[#2C3135]">
+        <div x-show="open" x-collapse class="flex flex-col ml-3">
             {{-- Container direkt an diesem Knoten --}}
             @foreach($node['containers'] as $container)
                 <a href="{{ route('flynk-connector.containers.show', $container) }}" wire:navigate
