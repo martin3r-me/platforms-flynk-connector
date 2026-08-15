@@ -42,7 +42,7 @@ class FlynkConnectorServiceProvider extends ServiceProvider
             PlatformCore::registerModule([
                 'key'        => 'flynk-connector',
                 'title'      => 'FLYNK Connector',
-                'group'      => 'admin',
+                'group'      => 'digital',
                 'routing'    => config('flynk-connector.routing'),
                 'guard'      => config('flynk-connector.guard'),
                 'navigation' => config('flynk-connector.navigation'),
