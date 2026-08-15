@@ -256,8 +256,18 @@ class Index extends Component
 
         $connection = $connectionId ? IntegrationConnection::find($connectionId) : null;
 
+        // Kein explizit gewählter Zugang ("Team-Standard verwenden") → denselben Team-Default
+        // auflösen, den auch der echte Push nutzt (FlynkContainerService::resolveConnection).
+        // Sonst kann man mit der Default-Auswahl keine Projekte laden.
         if (! $connection) {
-            $this->dispatch('toast', message: 'Bitte zuerst eine FLYNK-Verbindung wählen.');
+            $team = Auth::user()?->currentTeamRelation?->getRootTeam();
+            $connection = $team
+                ? app(\Platform\Integrations\Services\FlynkIntegrationService::class)->getConnectionForTeam($team)
+                : null;
+        }
+
+        if (! $connection) {
+            $this->dispatch('toast', message: 'Keine FLYNK-Verbindung gefunden — bitte eine Verbindung wählen oder einrichten.');
             return;
         }
 
