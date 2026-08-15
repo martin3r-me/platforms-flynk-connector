@@ -263,8 +263,9 @@ class Index extends Component
 
         try {
             $api = app(\Platform\Integrations\Services\FlynkApiService::class);
-            $response = $api->listProjects($connection);
-            $rows = $response['data'] ?? $response ?? [];
+            // Alle Cursor-Seiten holen — FLYNK paginiert (25/Seite); sonst wären nur die
+            // ersten 25 Projekte verknüpfbar und der Rest unsichtbar.
+            $rows = $api->listAllProjects($connection);
 
             $this->availableProjects = collect($rows)
                 ->map(fn ($p) => [
@@ -272,6 +273,7 @@ class Index extends Component
                     'name' => $p['name'] ?? ($p['title'] ?? '—'),
                 ])
                 ->filter(fn ($p) => $p['id'] !== null)
+                ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
                 ->values()
                 ->all();
 
