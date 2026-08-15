@@ -353,17 +353,116 @@ class FlynkContainerService
      */
     public function buildPushEnvelope(FlynkContainer $container, array $context, string $pushUuid): array
     {
+        // Letzter tatsächlich gesendeter Push = FLYNKs vermuteter Vorzustand.
+        $previous = $container->pushes()->whereNotNull('sent_at')->latest('sent_at')->first();
+        $previousContext = is_array($previous?->payload['context'] ?? null) ? $previous->payload['context'] : null;
+
         return [
             'push' => [
                 'uuid'               => $pushUuid,
+                'previous_push_uuid' => $previous?->uuid,
                 'container_uuid'     => $container->uuid,
                 'external_reference' => $container->uuid,
                 'project_id'         => $container->external_id,
                 'created_at'         => now()->toIso8601String(),
+                // context IST der vollständige Soll-Zustand — FLYNK kann jederzeit stumpf
+                // dagegen reconcilen. `changes` ist nur die Schnellspur (Delta vs. Vorpush).
+                'is_full_state'      => true,
                 'payload_hash'       => 'sha256:' . hash('sha256', $this->canonicalJson($context)),
+                'changes'            => $this->computeChanges($context, $previousContext),
             ],
             'context' => $context,
         ];
+    }
+
+    /**
+     * Semantisches Delta des Kontexts gegen den zuletzt gesendeten Kontext.
+     * Sammlungen mit stabiler Identität (Briefs per ref, Cluster per name, …) werden zu
+     * {added, changed, removed} von IDs; übrige Felder zu {changed: [feldschlüssel]} je
+     * Elterngruppe. Kein Vorpush ⇒ alles ist "added"/"changed" (ehrlicher Erst-Zustand).
+     */
+    protected const DELTA_IDENTITY = [
+        'seo.content_briefs'  => 'ref',
+        'seo.recommendations' => 'ref',
+        'seo.clusters'        => 'name',
+        'commerce.services'   => 'name',
+    ];
+
+    protected function computeChanges(array $current, ?array $previous): array
+    {
+        $changes = [];
+        $this->diffNode($current, $previous ?? [], '', $changes);
+
+        return array_filter(
+            $changes,
+            fn ($g) => ! empty($g['added']) || ! empty($g['changed']) || ! empty($g['removed'])
+        );
+    }
+
+    protected function diffNode(array $cur, array $prev, string $path, array &$changes): void
+    {
+        foreach (array_unique(array_merge(array_keys($cur), array_keys($prev))) as $k) {
+            $childPath = $path === '' ? (string) $k : $path.'.'.$k;
+            $cv = $cur[$k] ?? null;
+            $pv = $prev[$k] ?? null;
+
+            // 1) Bekannte Sammlung mit stabiler Identität → added/changed/removed.
+            if (isset(self::DELTA_IDENTITY[$childPath])) {
+                $diff = $this->collectionDiff(is_array($cv) ? $cv : [], is_array($pv) ? $pv : [], self::DELTA_IDENTITY[$childPath]);
+                if ($diff) {
+                    $changes[$childPath] = $diff;
+                }
+
+                continue;
+            }
+
+            // 2) Assoziatives Teilobjekt → rekursiv weiter.
+            if ($this->isAssoc($cv) || $this->isAssoc($pv)) {
+                $this->diffNode(is_array($cv) ? $cv : [], is_array($pv) ? $pv : [], $childPath, $changes);
+
+                continue;
+            }
+
+            // 3) Blatt (Skalar oder Liste ohne Identität) → Feld-Änderung unter der Elterngruppe.
+            if ($this->canonicalJson([$cv]) !== $this->canonicalJson([$pv])) {
+                $changes[$path === '' ? 'context' : $path]['changed'][] = (string) $k;
+            }
+        }
+    }
+
+    protected function collectionDiff(array $cur, array $prev, string $idField): array
+    {
+        $index = function (array $list) use ($idField): array {
+            $out = [];
+            foreach ($list as $item) {
+                if (is_array($item) && isset($item[$idField]) && $item[$idField] !== '') {
+                    $out[(string) $item[$idField]] = $item;
+                }
+            }
+
+            return $out;
+        };
+
+        $c = $index($cur);
+        $p = $index($prev);
+
+        $changed = [];
+        foreach (array_intersect(array_keys($c), array_keys($p)) as $id) {
+            if ($this->canonicalJson($c[$id]) !== $this->canonicalJson($p[$id])) {
+                $changed[] = (string) $id;
+            }
+        }
+
+        return array_filter([
+            'added'   => array_values(array_diff(array_keys($c), array_keys($p))),
+            'changed' => $changed,
+            'removed' => array_values(array_diff(array_keys($p), array_keys($c))),
+        ], fn ($v) => ! empty($v));
+    }
+
+    protected function isAssoc($v): bool
+    {
+        return is_array($v) && $v !== [] && array_keys($v) !== range(0, count($v) - 1);
     }
 
     /**
