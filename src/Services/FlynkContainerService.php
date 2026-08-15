@@ -238,9 +238,9 @@ class FlynkContainerService
      */
     protected function fetchTasks(IntegrationConnection $connection, string $projectId, ?string $flynkUrl = null): array
     {
-        $response = $this->api->listTasks($connection, ['project_id' => $projectId]);
-        $rows = $response['data'] ?? $response;
-        if (! is_array($rows)) {
+        // Alle Cursor-Seiten — sonst zeigt die Ansicht bei task-reichen Projekten nur 25.
+        $rows = $this->api->listAllTasks($connection, ['project_id' => $projectId]);
+        if (! $rows) {
             return [];
         }
 

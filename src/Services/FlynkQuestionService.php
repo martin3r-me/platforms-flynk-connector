@@ -36,7 +36,8 @@ class FlynkQuestionService
         $connection = $this->containers->resolveConnection($container);
 
         try {
-            $response = $this->api->listTasks($connection, [
+            // Alle Cursor-Seiten — sonst kämen Rückfragen jenseits der ersten 25 nie an.
+            $tasks = $this->api->listAllTasks($connection, [
                 'project_id' => $container->external_id,
                 'type' => 'question',
             ]);
@@ -47,8 +48,6 @@ class FlynkQuestionService
             ]);
             throw $e;
         }
-
-        $tasks = $response['data'] ?? $response ?? [];
         $pulled = 0; $open = 0;
 
         // FLYNK liefert status/priority mal als Skalar, mal als {label,value}-Objekt.
