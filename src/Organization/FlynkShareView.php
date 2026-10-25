@@ -27,12 +27,12 @@ class FlynkShareView implements ProvidesShareView
 
     /** Kundentaugliche Stände der Aufträge, in Board-Reihenfolge. */
     private const STATES = [
-        'new' => ['Neu', 'neutral'],
-        'planned' => ['Eingeplant', 'neutral'],
-        'in_progress' => ['In Arbeit', 'info'],
-        'review' => ['Zur Abnahme', 'warning'],
-        'on_hold' => ['Pausiert', 'warning'],
-        'done' => ['Erledigt', 'success'],
+        'new' => ['Neu', 'slate'],
+        'planned' => ['Eingeplant', 'indigo'],
+        'in_progress' => ['In Arbeit', 'sky'],
+        'review' => ['Zur Abnahme', 'amber'],
+        'on_hold' => ['Pausiert', 'rose'],
+        'done' => ['Erledigt', 'emerald'],
     ];
 
     public function shareTypes(): array
@@ -106,6 +106,7 @@ class FlynkShareView implements ProvidesShareView
             'title' => $s[0],
             'tone' => $s[1],
             'tasks' => $tasks->where('status', $key)->sortByDesc(fn ($t) => $this->date($t['created_at'] ?? null)?->timestamp ?? 0)->values()->all(),
+            'muted' => in_array($key, ['new', 'done'], true),
         ])->filter(fn ($col) => $col['tasks'] || in_array($col['key'], ['new', 'in_progress', 'review', 'done'], true))->values()->all();
 
         return [
@@ -143,6 +144,12 @@ class FlynkShareView implements ProvidesShareView
                 'type_label' => $this->typeLabel($t['type'] ?? null),
                 'status' => $t['status'],
                 'priority' => $t['priority'] ?? null,
+                'edge' => match (true) {
+                    ($t['status'] ?? null) === 'done' => 'var(--nx-success)',
+                    ($t['status'] ?? null) === 'review' => 'var(--nx-warning)',
+                    in_array($t['priority'] ?? null, ['high', 'urgent'], true) => 'var(--nx-danger)',
+                    default => 'var(--nx-line-strong)',
+                },
                 'created_at' => $t['created_at'] ?? null,
                 'created' => $this->date($t['created_at'] ?? null),
             ])->values();
