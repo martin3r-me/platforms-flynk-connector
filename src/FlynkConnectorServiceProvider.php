@@ -90,6 +90,12 @@ class FlynkConnectorServiceProvider extends ServiceProvider
         try {
             resolve(\Platform\Organization\Services\EntityLinkRegistry::class)
                 ->register(new \Platform\FlynkConnector\Organization\FlynkContainerEntityLinkProvider());
+
+            // Kunden-Tor: Websites auf geteilten Knoten
+            $registry = resolve(\Platform\Organization\Services\EntityLinkRegistry::class);
+            if (method_exists($registry, 'registerShareView')) {
+                $registry->registerShareView(new \Platform\FlynkConnector\Organization\FlynkShareView());
+            }
         } catch (\Throwable $e) {
             // Organization-Modul nicht geladen
         }
