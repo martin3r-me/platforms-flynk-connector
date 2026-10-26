@@ -14,7 +14,10 @@
         destroy() { this.ro && this.ro.disconnect() },
         fit() {
             const b = this.$refs.board; if (! b || ! b.offsetParent) return;
-            b.style.setProperty('--gp-board-h', Math.max(420, window.innerHeight - (b.getBoundingClientRect().top + window.scrollY)) + 'px');
+            const base = window.innerHeight - (b.getBoundingClientRect().top + window.scrollY);
+            b.style.setProperty('--gp-board-h', base + 'px');
+            const over = document.documentElement.scrollHeight - window.innerHeight;
+            b.style.setProperty('--gp-board-h', Math.max(420, base - Math.max(0, over)) + 'px');
         },
      }" x-init="ro = new ResizeObserver(() => fit()); ro.observe($refs.board); ro.observe(document.body)" @resize.window.debounce.100ms="fit()">
     <div class="gp-wrap pt-5">
