@@ -123,6 +123,7 @@ class FlynkConnectorServiceProvider extends ServiceProvider
             $registry->register(new \Platform\FlynkConnector\Tools\ListFlynkQuestionsTool());
             $registry->register(new \Platform\FlynkConnector\Tools\AnswerFlynkQuestionTool());
             $registry->register(new \Platform\FlynkConnector\Tools\PullFlynkQuestionsTool());
+            $registry->register(new \Platform\FlynkConnector\Tools\CreateFlynkTaskTool());
         } catch (\Throwable $e) {
             \Log::warning('FlynkConnector: Tool-Registrierung fehlgeschlagen', ['error' => $e->getMessage()]);
         }
