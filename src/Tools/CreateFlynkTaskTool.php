@@ -27,7 +27,7 @@ class CreateFlynkTaskTool implements ToolContract, ToolMetadataContract
 
     public function getDescription(): string
     {
-        return 'POST /flynk-connector/containers/{id}/tasks - Legt einen Auftrag (FLYNK-Task) am verknüpften FLYNK-Project des Containers an (Brief, Bug, Seitenänderung, …). Container per container_id oder uuid (siehe flynk-connector.containers.GET).';
+        return 'POST /flynk-connector/containers/{id}/tasks - Legt einen Auftrag (FLYNK-Task) am verknüpften FLYNK-Project des Containers an (Brief, Bug, Seitenänderung, …). Container per container_id oder uuid (siehe flynk-connector.containers.GET). Neue Aufträge starten in FLYNK immer im Status new.';
     }
 
     public function getSchema(): array
@@ -38,12 +38,10 @@ class CreateFlynkTaskTool implements ToolContract, ToolMetadataContract
                 'team_id'       => ['type' => 'integer'],
                 'container_id'  => ['type' => 'integer', 'description' => 'ID des Containers (alternativ uuid).'],
                 'uuid'          => ['type' => 'string', 'description' => 'UUID des Containers (alternativ container_id).'],
-                'title'         => ['type' => 'string', 'description' => 'ERFORDERLICH: Titel des Auftrags.'],
+                'title'         => ['type' => 'string', 'description' => 'ERFORDERLICH: Titel des Auftrags (max. 255 Zeichen).'],
                 'description'   => ['type' => 'string', 'description' => 'Beschreibung / Brief (Markdown).'],
                 'type'          => ['type' => 'string', 'enum' => self::TYPES, 'description' => 'Art des Auftrags (Default: change). Möglichst spezifisch wählen.'],
                 'priority'      => ['type' => 'string', 'enum' => ['low', 'normal', 'high'], 'description' => 'Default: normal.'],
-                'status'        => ['type' => 'string', 'enum' => ['new', 'suggested'], 'description' => 'new (Default) oder suggested (nur fürs FLYNK-Team sichtbar, bis freigegeben).'],
-                'team_only'     => ['type' => 'boolean', 'description' => 'true = Kunde sieht den Auftrag nie.'],
                 'target_url'    => ['type' => 'string', 'description' => 'Betroffene Seite.'],
                 'reference_url' => ['type' => 'string', 'description' => 'Referenz für Kontext.'],
             ],
@@ -61,6 +59,9 @@ class CreateFlynkTaskTool implements ToolContract, ToolMetadataContract
             $title = trim((string) ($arguments['title'] ?? ''));
             if ($title === '') {
                 return ToolResult::error('VALIDATION_ERROR', 'title ist erforderlich.');
+            }
+            if (mb_strlen($title) > 255) {
+                return ToolResult::error('VALIDATION_ERROR', 'title darf höchstens 255 Zeichen lang sein.');
             }
             $type = $arguments['type'] ?? 'change';
             if (! in_array($type, self::TYPES, true)) {
@@ -81,9 +82,6 @@ class CreateFlynkTaskTool implements ToolContract, ToolMetadataContract
                 'description'   => $arguments['description'] ?? null,
                 'type'          => $type,
                 'priority'      => $arguments['priority'] ?? 'normal',
-                'status'        => $arguments['status'] ?? null,
-                'source'        => 'internal',
-                'team_only'     => isset($arguments['team_only']) ? (bool) $arguments['team_only'] : null,
                 'target_url'    => $arguments['target_url'] ?? null,
                 'reference_url' => $arguments['reference_url'] ?? null,
             ], fn ($v) => $v !== null && $v !== '');
@@ -99,6 +97,9 @@ class CreateFlynkTaskTool implements ToolContract, ToolMetadataContract
 
             $task = is_array($response['data'] ?? null) ? $response['data'] : $response;
             $externalId = $task['id'] ?? $task['uuid'] ?? null;
+            // FLYNK liefert Aufzählungen als { value, label }.
+            $status = $task['status'] ?? 'new';
+            $status = is_array($status) ? ($status['value'] ?? 'new') : $status;
 
             FlynkContainerEvent::create([
                 'flynk_container_id' => $container->id,
@@ -120,7 +121,7 @@ class CreateFlynkTaskTool implements ToolContract, ToolMetadataContract
                 'project_id' => $container->external_id,
                 'task_id' => $externalId,
                 'title' => $task['title'] ?? $title,
-                'status' => $task['status'] ?? ($arguments['status'] ?? 'new'),
+                'status' => $status,
                 'url' => $task['url'] ?? null,
                 'message' => 'Auftrag an FLYNK angelegt.',
             ]);
